@@ -63,7 +63,8 @@ export default function VideoPlayer({ url }) {
             <ReactPlayer
                 ref={playerRef}
                 src={url}
-                playing={false}
+                muted={true}
+                playing={true}
                 controls
                 width="100%"
                 height="100%"
