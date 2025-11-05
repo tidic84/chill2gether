@@ -7,6 +7,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Import des fichiers de routes pour gérer les différentes entités
 const userRoutes = require('./routes/userRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;                // Port d’écoute du serveur
@@ -34,6 +35,9 @@ app.use('/uploads', express.static('uploads'));
 
 // Définition des routes principales de l'API, avec préfixe /api
 app.use('/api/users', userRoutes);
+
+app.use('/api/search', searchRoutes);
+
 
 
 app.use(errorHandler);

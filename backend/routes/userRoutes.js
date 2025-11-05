@@ -13,6 +13,8 @@ router.post('/login', userController.loginUser);
 // Route pour récupérer les informations de l'utilisateur connecté
 router.get('/me', authenticateToken, userController.getMe);
 
+
+
 // Route pour modifier les informations de l'utilisateur connecté
 router.put('/me', authenticateToken, userController.updateMe);
 
