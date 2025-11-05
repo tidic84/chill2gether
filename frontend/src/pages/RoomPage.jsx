@@ -5,6 +5,8 @@ import VideoPlayer from "../components/VideoPlayer/VideoPlayer";
 import Chat from "../components/Chat/Chat";
 import UserList from "../components/UserList/UserList";
 import Playlist from "../components/Playlist/Playlist";
+import YouTubeSearch from "../components/searchbar/YouTubeSearch";
+
 
 export default function RoomPage() {
     //const { roomId } = useParams();
@@ -60,8 +62,9 @@ export default function RoomPage() {
                 <Playlist
                     videos={playlistVideos}
                     onSelectVideo={(url) => setCurrentVideoUrl(url)}
-                />
+                />            
             }
+            search={<YouTubeSearch onSelectVideo={setCurrentVideoUrl}/>}
         />
 
     );
