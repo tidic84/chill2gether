@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3000");
+const socket = io("http://localhost:5173");
 
 export default function UserList() {
     const [users, setUsers] = useState([]);
