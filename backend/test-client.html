@@ -213,6 +213,35 @@
         .instructions li {
             margin: 5px 0;
         }
+
+        .room-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin: 5px 0;
+        }
+
+        .room-badge button {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .room-badge button:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -253,6 +282,15 @@
                 <button onclick="sendMessage()" class="secondary">Envoyer</button>
             </div>
             <div class="input-group">
+                <input type="text" id="roomIdInput" placeholder="ID de la room">
+                <button onclick="createRoom()">➕ Créer une room</button>
+                <button onclick="joinRoom()" class="secondary">🚪 Rejoindre une room</button>
+            </div>
+            <div id="currentRooms" style="margin-top: 15px;">
+                <h4 style="margin-bottom: 10px; color: #333;">🏠 Rooms actuelles:</h4>
+                <div id="roomsList" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+            </div>
+            <div class="input-group" style="margin-top: 15px;">
                 <button onclick="clearUserId()" class="danger">🗑️ Effacer userId (simuler nouveau navigateur)</button>
                 <button onclick="reconnect()">🔄 Reconnecter</button>
             </div>
@@ -268,6 +306,7 @@
         let socket;
         let currentUserId = null;
         let currentUsername = null;
+        let currentRooms = new Set(); // Set pour stocker les rooms actuelles
 
         // Récupérer le userId stocké dans localStorage (si existe)
         const storedUserId = localStorage.getItem('anonymousUserId');
@@ -356,10 +395,40 @@
                 addLog(`💬 Message reçu: ${data.text}`, 'info');
             });
 
+            // Événement : utilisateur a rejoint la room
+            socket.on('user-joined', (data) => {
+                addLog(`👋 ${data.username || 'Un utilisateur'} a rejoint la room`, 'info');
+            });
+
+            // Événement : utilisateur a quitté la room
+            socket.on('user-left', (data) => {
+                addLog(`👋 ${data.username || 'Un utilisateur'} a quitté la room`, 'info');
+            });
+
+            // Événement : confirmation de jointure à une room
+            socket.on('room-joined', (data) => {
+                if (data && data.roomId) {
+                    currentRooms.add(data.roomId);
+                    updateRoomsList();
+                    addLog(`✅ Vous avez rejoint la room: ${data.roomId}`, 'success');
+                }
+            });
+
+            // Événement : confirmation de sortie d'une room
+            socket.on('room-left', (data) => {
+                if (data && data.roomId) {
+                    currentRooms.delete(data.roomId);
+                    updateRoomsList();
+                    addLog(`🚪 Vous avez quitté la room: ${data.roomId}`, 'info');
+                }
+            });
+
             // Événement : déconnexion
             socket.on('disconnect', (reason) => {
                 addLog(`🔌 Déconnecté du serveur (Raison: ${reason})`, 'error');
                 updateStatus(false);
+                currentRooms.clear();
+                updateRoomsList();
             });
 
             // Événement : erreur de connexion
@@ -404,10 +473,101 @@
             if (socket) {
                 socket.disconnect();
                 addLog('🔄 Reconnexion...', 'info');
+                currentRooms.clear();
+                updateRoomsList();
                 setTimeout(() => {
                     connectSocket();
                 }, 500);
             }
+        }
+
+        function generateRoomId() {
+            // Génère un ID de room aléatoire (6 caractères alphanumériques)
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function createRoom() {
+            if (!socket || !socket.connected) {
+                alert('Vous devez être connecté pour créer une room');
+                return;
+            }
+
+            const roomIdInput = document.getElementById('roomIdInput');
+            let roomId = roomIdInput.value.trim();
+
+            // Si aucun ID n'est fourni, générer un ID aléatoire
+            if (!roomId) {
+                roomId = generateRoomId();
+                roomIdInput.value = roomId;
+            }
+
+            // Vérifier si l'utilisateur n'est pas déjà dans cette room
+            if (currentRooms.has(roomId)) {
+                addLog(`⚠️ Vous êtes déjà dans la room: ${roomId}`, 'warning');
+                return;
+            }
+
+            socket.emit('join-room', roomId);
+            addLog(`📤 Demande de création/rejoint de la room: ${roomId}`, 'info');
+        }
+
+        function joinRoom() {
+            if (!socket || !socket.connected) {
+                alert('Vous devez être connecté pour rejoindre une room');
+                return;
+            }
+
+            const roomIdInput = document.getElementById('roomIdInput');
+            const roomId = roomIdInput.value.trim();
+
+            if (!roomId) {
+                alert('Veuillez entrer un ID de room');
+                return;
+            }
+
+            // Vérifier si l'utilisateur n'est pas déjà dans cette room
+            if (currentRooms.has(roomId)) {
+                addLog(`⚠️ Vous êtes déjà dans la room: ${roomId}`, 'warning');
+                return;
+            }
+
+            socket.emit('join-room', roomId);
+            addLog(`📤 Demande de jointure à la room: ${roomId}`, 'info');
+        }
+
+        function leaveRoom(roomId) {
+            if (!socket || !socket.connected) {
+                alert('Vous devez être connecté pour quitter une room');
+                return;
+            }
+
+            if (!currentRooms.has(roomId)) {
+                addLog(`⚠️ Vous n'êtes pas dans la room: ${roomId}`, 'warning');
+                return;
+            }
+
+            socket.emit('leave-room', roomId);
+            addLog(`📤 Demande de sortie de la room: ${roomId}`, 'info');
+        }
+
+        function updateRoomsList() {
+            const roomsListDiv = document.getElementById('roomsList');
+            roomsListDiv.innerHTML = '';
+
+            if (currentRooms.size === 0) {
+                roomsListDiv.innerHTML = '<p style="color: #666; font-style: italic;">Aucune room active</p>';
+                return;
+            }
+
+            currentRooms.forEach(roomId => {
+                const roomBadge = document.createElement('div');
+                roomBadge.className = 'room-badge';
+                roomBadge.innerHTML = `
+                    <span>🏠 ${roomId}</span>
+                    <button onclick="leaveRoom('${roomId}')" title="Quitter cette room">✕</button>
+                `;
+                roomsListDiv.appendChild(roomBadge);
+            });
         }
 
         // Permettre l'envoi avec Entrée
@@ -423,6 +583,21 @@
             }
         });
 
+        document.getElementById('roomIdInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const roomId = document.getElementById('roomIdInput').value.trim();
+                if (roomId) {
+                    if (currentRooms.has(roomId)) {
+                        leaveRoom(roomId);
+                    } else {
+                        joinRoom();
+                    }
+                } else {
+                    createRoom();
+                }
+            }
+        });
+
         // Connexion automatique au chargement
         window.addEventListener('load', () => {
             if (storedUserId) {
@@ -430,6 +605,9 @@
             } else {
                 addLog('🆕 Aucun userId trouvé, création d\'un nouvel utilisateur', 'info');
             }
+            
+            // Initialiser la liste des rooms
+            updateRoomsList();
             
             connectSocket();
         });

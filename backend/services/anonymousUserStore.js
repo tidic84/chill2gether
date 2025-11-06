@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const { debugLog } = require('../utils/utils');
 
 /**
  * Store en mémoire pour gérer les utilisateurs anonymes connectés via Socket.IO
@@ -31,13 +32,14 @@ class AnonymousUserStore {
             socketId,
             username: username || `User${userId.substring(0, 8)}`,
             connectedAt: new Date(),
-            lastActivity: new Date()
+            lastActivity: new Date(),
+            disconnectedAt: null // Null si connecté, Date si déconnecté temporairement
         };
 
         this.users.set(userId, user);
         this.socketToUser.set(socketId, userId);
 
-        console.log(`Utilisateur anonyme créé: ${userId} (socket: ${socketId})`);
+        debugLog(`Utilisateur anonyme créé: ${userId} (socket: ${socketId})`);
         return user;
     }
 
@@ -78,9 +80,10 @@ class AnonymousUserStore {
         // Mettre à jour
         user.socketId = newSocketId;
         user.lastActivity = new Date();
+        user.disconnectedAt = null; // Réinitialiser le statut de déconnexion
         this.socketToUser.set(newSocketId, userId);
 
-        console.log(`🔄 Socket mis à jour pour l'utilisateur ${userId}: ${newSocketId}`);
+        debugLog(`Socket mis à jour pour l'utilisateur ${userId}: ${newSocketId}`);
         return true;
     }
 
@@ -102,7 +105,7 @@ class AnonymousUserStore {
     }
 
     /**
-     * Supprime un utilisateur (à la déconnexion)
+     * Marque un utilisateur comme déconnecté (au lieu de le supprimer immédiatement)
      * @param {string} socketId - ID du socket
      * @returns {boolean} Succès de l'opération
      */
@@ -112,10 +115,31 @@ class AnonymousUserStore {
             return false;
         }
 
-        this.users.delete(userId);
-        this.socketToUser.delete(socketId);
+        const user = this.users.get(userId);
+        if (user) {
+            user.disconnectedAt = new Date();
+            this.socketToUser.delete(socketId);
+            debugLog(`Utilisateur marqué comme déconnecté: ${userId} (socket: ${socketId})`);
+        }
 
-        console.log(`🗑️  Utilisateur anonyme supprimé: ${userId} (socket: ${socketId})`);
+        return true;
+    }
+
+    /**
+     * Supprime définitivement un utilisateur
+     * @param {string} userId - ID de l'utilisateur
+     * @returns {boolean} Succès de l'opération
+     */
+    permanentlyRemoveUser(userId) {
+        const user = this.users.get(userId);
+        if (!user) {
+            return false;
+        }
+
+        this.socketToUser.delete(user.socketId);
+        this.users.delete(userId);
+
+        debugLog(`Utilisateur définitivement supprimé: ${userId}`);
         return true;
     }
 
@@ -142,11 +166,17 @@ class AnonymousUserStore {
     }
 
     /**
-     * Récupère le nombre d'utilisateurs connectés
+     * Récupère le nombre d'utilisateurs connectés (non déconnectés)
      * @returns {number} Nombre d'utilisateurs
      */
     getUserCount() {
-        return this.users.size;
+        let count = 0;
+        for (const user of this.users.values()) {
+            if (!user.disconnectedAt) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -156,6 +186,31 @@ class AnonymousUserStore {
      */
     userExists(userId) {
         return this.users.has(userId);
+    }
+
+    /**
+     * Nettoie les utilisateurs déconnectés depuis un certain temps
+     * @param {number} disconnectedSeconds - Nombre de secondes après déconnexion avant suppression définitive
+     * @returns {number} Nombre d'utilisateurs supprimés
+     */
+    cleanupDisconnectedUsers(disconnectedSeconds = 30) {
+        const now = new Date();
+        const threshold = disconnectedSeconds * 1000;
+        let cleanedCount = 0;
+
+        for (const [userId, user] of this.users.entries()) {
+            if (user.disconnectedAt && (now - user.disconnectedAt > threshold)) {
+                this.socketToUser.delete(user.socketId);
+                this.users.delete(userId);
+                cleanedCount++;
+            }
+        }
+
+        if (cleanedCount > 0) {
+            debugLog(`Nettoyage: ${cleanedCount} utilisateur(s) déconnecté(s) supprimé(s)`);
+        }
+
+        return cleanedCount;
     }
 
     /**
@@ -176,7 +231,7 @@ class AnonymousUserStore {
         }
 
         if (cleanedCount > 0) {
-            console.log(`🧹 Nettoyage: ${cleanedCount} utilisateur(s) inactif(s) supprimé(s)`);
+            debugLog(`Nettoyage: ${cleanedCount} utilisateur(s) inactif(s) supprimé(s)`);
         }
 
         return cleanedCount;
