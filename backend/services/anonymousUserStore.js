@@ -240,4 +240,3 @@ class AnonymousUserStore {
 
 // Export une instance unique (singleton)
 module.exports = new AnonymousUserStore();
-

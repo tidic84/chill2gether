@@ -1,5 +1,6 @@
 const express = require("express");
 const http = require("http");
+const http = require("http");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -7,8 +8,8 @@ require("dotenv").config();
 const errorHandler = require('./middleware/errorHandler');
 
 // Import des fichiers de routes pour gérer les différentes entités
+const searchRoutes = require('./routes/searchRoutes');
 // const userRoutes = require('./routes/userRoutes');
-
 // Import de la configuration Socket.IO
 const initializeSocket = require('./config/socket');
 
@@ -38,6 +39,8 @@ app.use(express.json());
 // app.use('/uploads', express.static('uploads'));
 
 // Définition des routes principales de l'API, avec préfixe /api
+app.use('/api/search', searchRoutes);
+
 // app.use('/api/users', userRoutes);
 
 app.use(errorHandler);
