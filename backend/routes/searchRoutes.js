@@ -1,6 +1,6 @@
 // routes/searchRoutes.js
 const express = require('express');
-const userController = require('../controllers/userController');
+const { getSearchResults } = require('../controllers/searchController');
 
 const router = express.Router();
 

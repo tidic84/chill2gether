@@ -1,5 +1,5 @@
 // controllers/searchController.js
-import { searchYouTube } from "../models/searchModel.js";
+import { searchYouTube } from "../model/searchModel.js";
 
 export async function getSearchResults(req, res) {
   const query = req.query.q;

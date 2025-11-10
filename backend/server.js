@@ -1,6 +1,5 @@
 const express = require("express");
 const http = require("http");
-const http = require("http");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -36,6 +35,7 @@ app.use(express.json());
 
 // Middleware pour servir les fichiers statiques (ex : logos, images uploadées)
 // Accessible via l'URL /uploads/nom_du_fichier
+// app.use('/uploads', express.static('uploads'));
 // app.use('/uploads', express.static('uploads'));
 
 // Définition des routes principales de l'API, avec préfixe /api
