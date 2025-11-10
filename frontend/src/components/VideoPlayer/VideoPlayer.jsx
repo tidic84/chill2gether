@@ -59,7 +59,7 @@ export default function VideoPlayer({ url }) {
     }, [url]);
 
     return (
-        <div className="w-full h-full">
+        <div className="w-full h-full rounded-3xl overflow-hidden bg-black">
             <ReactPlayer
                 ref={playerRef}
                 src={url}
