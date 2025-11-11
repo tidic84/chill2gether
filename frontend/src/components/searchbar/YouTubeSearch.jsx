@@ -10,7 +10,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:5173/api/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`http://localhost:3000/api/search/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       console.log("Résultats de la recherche YouTube :", data);
       setResults(data);
