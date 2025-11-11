@@ -47,7 +47,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
       {visible && (
         <div className="absolute z-50 top-16 left-0 w-full max-h-[70vh] overflow-y-auto  bg-black bg-opacity-95 shadow-lg rounded p-4 ">
           <div className="flex justify-between items-center mb-2 ">
-            <h3 className="font-semibold">Résultats</h3>
+            <h3 className="font-semibold text-white">Résultats</h3>
             <button
               onClick={() => setVisible(false)}
               className="text-red-500 font-medium hover:underline"
@@ -56,7 +56,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
             </button>
           </div>
 
-          {loading && <p>Chargement...</p>}
+          {loading && <p className="text-white">Chargement...</p>}
           <div className="mt-4 space-y-3 ">
             {results.map((item) => (
               <div
