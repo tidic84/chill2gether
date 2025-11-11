@@ -90,7 +90,7 @@ export default function RoomPage() {
                 <Playlist
                     videos={playlistVideos}
                     onSelectVideo={(url) => setCurrentVideoUrl(url)}
-                />
+                />            
             }
             history={history}
             activities={activities}

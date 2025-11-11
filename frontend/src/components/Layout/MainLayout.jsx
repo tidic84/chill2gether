@@ -19,6 +19,7 @@ export default function MainLayout({ video, chat, users, playlist, history, acti
                 <div className="p-2 min-h-[40vh]">
                     <BottomMenu users={users} activities={activities} permissions={permissions} />
                 </div>
+
             </div>
 
             {/* Sidebar droite fixe */}
