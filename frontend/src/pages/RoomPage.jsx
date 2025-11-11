@@ -5,8 +5,7 @@ import VideoPlayer from "../components/VideoPlayer/VideoPlayer";
 import Chat from "../components/Chat/Chat";
 import UserList from "../components/UserList/UserList";
 import Playlist from "../components/Playlist/Playlist";
-import YouTubeSearch from "../components/searchbar/YouTubeSearch";
-
+import History from "../components/History/History";
 
 export default function RoomPage() {
     //const { roomId } = useParams();
@@ -44,7 +43,36 @@ export default function RoomPage() {
         { id: 1, title: "Vidéo 1", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
         { id: 2, title: "Vidéo 2", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
         { id: 3, title: "Vidéo 3", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
+        { id: 4, title: "Vidéo 4", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
+        { id: 5, title: "Vidéo 5", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
+        { id: 6, title: "Vidéo 6", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
+
     ];
+
+    // Contenu fictif pour activities et permissions
+    const activities = (
+        <ul className="space-y-1">
+            <li className="px-2 py-1 bg-gray-100 rounded">Regarder une vidéo</li>
+            <li className="px-2 py-1 bg-gray-100 rounded">Partager un lien</li>
+            <li className="px-2 py-1 bg-gray-100 rounded">Discussion générale</li>
+        </ul>
+    );
+
+    const permissions = (
+        <ul className="space-y-1">
+            <li className="px-2 py-1 bg-gray-100 rounded">Peut changer la vidéo</li>
+            <li className="px-2 py-1 bg-gray-100 rounded">Peut inviter des utilisateurs</li>
+            <li className="px-2 py-1 bg-gray-100 rounded">Peut supprimer des messages</li>
+        </ul>
+    );
+
+    // Historique fictif
+    const history = (
+        <History
+            videos={playlistVideos}
+            onSelectVideo={(url) => setCurrentVideoUrl(url)}
+        />
+    );
 
     // Vidéo actuelle
     const [currentVideoUrl, setCurrentVideoUrl] = useState(playlistVideos[0].url);
@@ -64,8 +92,9 @@ export default function RoomPage() {
                     onSelectVideo={(url) => setCurrentVideoUrl(url)}
                 />            
             }
-            search={<YouTubeSearch onSelectVideo={setCurrentVideoUrl}/>}
+            history={history}
+            activities={activities}
+            permissions={permissions}
         />
-
     );
 }
