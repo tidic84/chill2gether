@@ -3,8 +3,8 @@ export default function MainLayout({ video, chat, users, playlist,search }) {
         <div className="h-screen flex">
             {/* Zone principale */}
             <div className="flex-1 flex flex-col">
-
-                <div className="w-1/3 border-r p-2 overflow-y-auto">
+            
+                <div className="w-1/3 border-r p-2 ">
                     {search}
                 </div>
 
