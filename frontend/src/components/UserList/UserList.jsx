@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3000");
+const socket = io("http://localhost:5173");
 
 // 20 utilisateurs fictifs
 const fakeUsers = Array.from({ length: 20 }, (_, i) => ({

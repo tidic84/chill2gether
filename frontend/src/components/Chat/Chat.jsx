@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 // ICI AJOUTER AUSSI LE NOM DE L'USER ET L'HEURE DU MESSAGE
 // + METTRE EN PLACE CÔTÉ SERVEUR
 
-const socket = io("http://localhost:3000");
+const socket = io("http://localhost:5173)");
 
 export default function Chat() {
     const [messages, setMessages] = useState([]);
