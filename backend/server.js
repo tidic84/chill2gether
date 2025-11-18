@@ -22,7 +22,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development'; // Environnement d'exéc
 // En développement, autoriser localhost pour tests front-end locaux
 const allowedOrigins = NODE_ENV === 'production'
     ? ['https://www.website.com', 'https://website.com']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+    : ['http://localhost:5173', 'http://127.0.0.1:5173'];
 
 app.use(cors({
     origin: allowedOrigins,                // Origines autorisées pour les requêtes cross-origin

@@ -5,6 +5,7 @@ import VideoPlayer from "../components/VideoPlayer/VideoPlayer";
 import Chat from "../components/Chat/Chat";
 import UserList from "../components/UserList/UserList";
 import Playlist from "../components/Playlist/Playlist";
+import YouTubeSearch from "../components/searchbar/YouTubeSearch";
 import History from "../components/History/History";
 
 export default function RoomPage() {
@@ -92,6 +93,7 @@ export default function RoomPage() {
                     onSelectVideo={(url) => setCurrentVideoUrl(url)}
                 />            
             }
+            search={<YouTubeSearch onSelectVideo={setCurrentVideoUrl}/>}
             history={history}
             activities={activities}
             permissions={permissions}

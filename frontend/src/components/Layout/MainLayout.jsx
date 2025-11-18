@@ -1,15 +1,17 @@
+
 import ChatSidebar from "@/components/ChatSidebar/ChatSidebar";
 import BottomMenu from "@/components/BottomMenu/BottomMenu";
 import YoutubeSearch from "@/components/YoutubeSearch/YoutubeSearch";
 
-export default function MainLayout({ video, chat, users, playlist, history, activities, permissions }) {
+
+export default function MainLayout({ video, chat, users, playlist,search, history, activities, permissions }) {
     return (
         <div className="min-h-screen bg-black flex">
             {/* Partie gauche scrollable */}
             <div className="flex-1 flex flex-col overflow-y-auto">
                 {/* 🔍 Barre de recherche tout en haut */}
-                <div className="bg-black  sticky top-0 z-50">
-                    <YoutubeSearch />
+                <div className="w-1/3 border-r p-2 ">
+                    {search}
                 </div>
 
                 {/* Zone vidéo fixe à 80vh */}
