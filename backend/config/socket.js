@@ -1,5 +1,6 @@
 const { Server } = require("socket.io");
 const anonymousUserStore = require("../services/anonymousUserStore");
+const { debugLog } = require("../utils/utils");
 
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
@@ -16,24 +17,29 @@ function initializeSocket(server, allowedOrigins) {
         }
     });
 
+    // Nettoyage périodique des utilisateurs déconnectés (toutes les 10 secondes)
+    setInterval(() => {
+        anonymousUserStore.cleanupDisconnectedUsers(3600); // Supprime après 1 heure de déconnexion
+    }, 10000);
+
     // Gestion des connexions
     io.on('connection', (socket) => {
-        console.log(`🔌 Nouveau client connecté: ${socket.id}`);
+        debugLog(`Nouveau client connecté: ${socket.id}`);
         
-        // Vérifier si l'utilisateur a déjà un userId (reconnexion)
+        // ### Partie Vérifier si l'utilisateur a déjà un userId (reconnexion)
         const existingUserId = socket.handshake.auth.userId;
-        console.log("existingUserId", existingUserId);
+        debugLog("existingUserId", existingUserId);
         let user;
-
         if (existingUserId && anonymousUserStore.userExists(existingUserId)) {
-            // Utilisateur existant qui se reconnecte
+            // Utilisateur existant qui se reconnecte (même après une actualisation de page)
             anonymousUserStore.updateSocketId(existingUserId, socket.id);
             user = anonymousUserStore.getUserById(existingUserId);
-            console.log(`🔄 Utilisateur existant reconnecté: ${user.username}`);
+            debugLog(`Utilisateur existant reconnecté: ${user.username} (${existingUserId})`);
         } else {
             // Nouvel utilisateur
             const username = socket.handshake.auth.username || null;
             user = anonymousUserStore.createUser(socket.id, username);
+            debugLog(`Nouvel utilisateur créé: ${user.username} (${user.userId})`);
         }
 
         // Envoyer l'userId au client pour qu'il le stocke
@@ -54,46 +60,16 @@ function initializeSocket(server, allowedOrigins) {
             if (currentUser) {
                 anonymousUserStore.updateUsername(currentUser.userId, newUsername);
                 socket.emit('username-updated', { username: newUsername });
-                console.log(`✏️  Utilisateur ${currentUser.userId} a changé de nom: ${newUsername}`);
+                console.log(`Utilisateur ${currentUser.userId} a changé de nom: ${newUsername}`);
             }
         });
 
         // Événement de déconnexion
         socket.on('disconnect', (reason) => {
-            console.log(`🔌 Client déconnecté: ${socket.id} - Raison: ${reason}`);
+            debugLog(`Client déconnecté: ${socket.id} - Raison: ${reason}`);
             
             // Supprimer l'utilisateur du store
             anonymousUserStore.removeUserBySocketId(socket.id);
-            
-            // Notifier les autres du nouveau nombre d'utilisateurs
-            io.emit('users-count', {
-                count: anonymousUserStore.getUserCount()
-            });
-        });
-
-        // Exemple d'événement personnalisé
-        socket.on('message', (data) => {
-            anonymousUserStore.updateActivity(socket.id);
-            
-            const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-            console.log(`💬 Message reçu de ${currentUser?.username || 'inconnu'}:`, data);
-            
-            // Répondre au client
-            socket.emit('message', { 
-                text: 'Message reçu par le serveur',
-                timestamp: new Date()
-            });
-            
-            // Ou diffuser à tous les clients avec le nom de l'utilisateur
-            // io.emit('message', {
-            //     ...data,
-            //     username: currentUser?.username,
-            //     userId: currentUser?.userId,
-            //     timestamp: new Date()
-            // });
-            
-            // Ou diffuser à tous sauf l'émetteur
-            // socket.broadcast.emit('message', data);
         });
 
         // Rejoindre une room spécifique
@@ -102,7 +78,13 @@ function initializeSocket(server, allowedOrigins) {
             const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
             
             socket.join(roomId);
-            console.log(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
+            debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
+            
+            // Confirmer la jointure au client
+            socket.emit('room-joined', {
+                roomId: roomId,
+                timestamp: new Date()
+            });
             
             // Notifier les autres membres de la room
             socket.to(roomId).emit('user-joined', {
@@ -119,7 +101,13 @@ function initializeSocket(server, allowedOrigins) {
             const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
             
             socket.leave(roomId);
-            console.log(`${currentUser?.username || 'Client'} a quitté la room ${roomId}`);
+            debugLog(`${currentUser?.username || 'Client'} a quitté la room ${roomId}`);
+            
+            // Confirmer la sortie au client
+            socket.emit('room-left', {
+                roomId: roomId,
+                timestamp: new Date()
+            });
             
             // Notifier les autres membres de la room
             socket.to(roomId).emit('user-left', {
@@ -132,7 +120,7 @@ function initializeSocket(server, allowedOrigins) {
 
         // Gestion des erreurs
         socket.on('error', (error) => {
-            console.error('Erreur Socket.IO:', error);
+            debugLog('Erreur Socket.IO:', error);
         });
     });
 

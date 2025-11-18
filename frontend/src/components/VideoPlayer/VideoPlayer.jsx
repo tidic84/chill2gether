@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3000");
+const socket = io("http://localhost:5173");
 
 export default function VideoPlayer({ url }) {
     const playerRef = useRef(null);
@@ -59,7 +59,7 @@ export default function VideoPlayer({ url }) {
     }, [url]);
 
     return (
-        <div className="w-full h-full">
+        <div className="w-full h-full rounded-3xl overflow-hidden bg-black">
             <ReactPlayer
                 ref={playerRef}
                 src={url}
