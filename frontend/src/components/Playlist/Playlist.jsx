@@ -14,6 +14,7 @@ export default function Playlist({ videos = [], onSelectVideo, onDeleteVideo }) 
                 {videos.map((video, index) => (
                     <div
                         key={video.id}
+                        onClick={() => handleSelect(index)}
                         className={`relative flex items-center p-2 rounded-lg shadow cursor-pointer transition-colors ${index === currentIndex
                             ? "bg-gray-400 text-black"
                             : "bg-gray-100 text-black hover:bg-gray-200"
