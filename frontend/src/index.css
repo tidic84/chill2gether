@@ -1,3 +1,61 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.pastel-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, #0b0b1f 0%, #2b0e5a 30%, #6b3bff 55%, #0b0b1f 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 30s ease infinite;
+  filter: blur(56px);
+  transform: translateZ(0);
+  opacity: 0.95;
+}
+
+.blob {
+  position: absolute;
+  filter: blur(80px);
+  transform: translateZ(0);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.blob-1 {
+  left: -20%;
+  top: -10%;
+  width: 65%;
+  height: 65%;
+  background:
+    radial-gradient(closest-side at 20% 30%, rgba(120,13,163,0.9), transparent 25%),
+    radial-gradient(closest-side at 70% 60%, rgba(59,130,246,0.25), transparent 30%);
+  animation: floaty 12s ease-in-out infinite;
+}
+
+.blob-2 {
+  right: -15%;
+  bottom: -10%;
+  width: 55%;
+  height: 55%;
+  background:
+    radial-gradient(closest-side at 80% 20%, rgba(255,255,255,0.12), transparent 25%),
+    radial-gradient(closest-side at 30% 70%, rgba(255,176,0,0.06), transparent 30%);
+  animation: floaty 16s ease-in-out infinite reverse;
+}
+
+@keyframes floaty {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-18px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* optional vignette */
+.overlay-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.35) 100%);
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
