@@ -8,9 +8,12 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Import des fichiers de routes pour gérer les différentes entités
 const searchRoutes = require('./routes/searchRoutes');
+const roomRoutes = require('./routes/roomRoutes');
 // const userRoutes = require('./routes/userRoutes');
 // Import de la configuration Socket.IO
 const initializeSocket = require('./config/socket');
+// Import du service de nettoyage des rooms
+const { initRoomCleanup } = require('./services/roomCleanup');
 
 const app = express();
 const server = http.createServer(app);
@@ -40,6 +43,7 @@ app.use(express.json());
 
 // Définition des routes principales de l'API, avec préfixe /api
 app.use('/api/search', searchRoutes);
+app.use('/api/rooms', roomRoutes);
 
 // app.use('/api/users', userRoutes);
 
@@ -50,6 +54,9 @@ const io = initializeSocket(server, allowedOrigins);
 
 // Rendre l'instance io accessible dans toute l'application
 app.set('io', io);
+
+// Initialisation du service de nettoyage des rooms inactives
+initRoomCleanup();
 
 // Démarrage du serveur sur le port défini, affichage d'un message de confirmation
 server.listen(PORT, () => {

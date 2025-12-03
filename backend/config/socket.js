@@ -1,5 +1,6 @@
 const { Server } = require("socket.io");
 const anonymousUserStore = require("../services/anonymousUserStore");
+const roomModel = require("../model/roomModel");
 const { debugLog } = require("../utils/utils");
 
 /**
@@ -65,27 +66,41 @@ function initializeSocket(server, allowedOrigins) {
         });
 
         // Événement de déconnexion
-        socket.on('disconnect', (reason) => {
+        socket.on('disconnect', async (reason) => {
             debugLog(`Client déconnecté: ${socket.id} - Raison: ${reason}`);
-            
+
+            // Si l'utilisateur était dans une room, décrémenter le compteur
+            if (socket.currentRoomId) {
+                await roomModel.decrementUserCount(socket.currentRoomId);
+                debugLog(`Compteur décrémenté pour la room ${socket.currentRoomId}`);
+            }
+
             // Supprimer l'utilisateur du store
             anonymousUserStore.removeUserBySocketId(socket.id);
         });
 
         // Rejoindre une room spécifique
-        socket.on('join-room', (roomId) => {
+        socket.on('join-room', async (roomId) => {
             anonymousUserStore.updateActivity(socket.id);
             const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-            
+
             socket.join(roomId);
+
+            // Stocker la room actuelle dans le socket pour la gérer lors de la déconnexion
+            socket.currentRoomId = roomId;
+
+            // Mettre à jour l'activité et le compteur d'utilisateurs de la room
+            await roomModel.incrementUserCount(roomId);
+            await roomModel.updateRoomActivity(roomId);
+
             debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
-            
+
             // Confirmer la jointure au client
             socket.emit('room-joined', {
                 roomId: roomId,
                 timestamp: new Date()
             });
-            
+
             // Notifier les autres membres de la room
             socket.to(roomId).emit('user-joined', {
                 userId: currentUser?.userId,
@@ -96,19 +111,28 @@ function initializeSocket(server, allowedOrigins) {
         });
 
         // Quitter une room
-        socket.on('leave-room', (roomId) => {
+        socket.on('leave-room', async (roomId) => {
             anonymousUserStore.updateActivity(socket.id);
             const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-            
+
             socket.leave(roomId);
+
+            // Décrémenter le compteur d'utilisateurs de la room
+            await roomModel.decrementUserCount(roomId);
+
+            // Retirer la room du socket
+            if (socket.currentRoomId === roomId) {
+                socket.currentRoomId = null;
+            }
+
             debugLog(`${currentUser?.username || 'Client'} a quitté la room ${roomId}`);
-            
+
             // Confirmer la sortie au client
             socket.emit('room-left', {
                 roomId: roomId,
                 timestamp: new Date()
             });
-            
+
             // Notifier les autres membres de la room
             socket.to(roomId).emit('user-left', {
                 userId: currentUser?.userId,

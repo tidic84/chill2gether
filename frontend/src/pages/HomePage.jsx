@@ -107,10 +107,10 @@ export default function HomePage() {
 
                 <div className="flex flex-col sm:flex-row gap-4">
                     <Link
-                        to="/login"
+                        to="/create-room"
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition"
                     >
-                        Se connecter
+                        Créer une room
                     </Link>
                     <Link
                         to="/login"
