@@ -5,11 +5,25 @@ import Stepper, { Step } from "../components/Stepper/Stepper";
 import Particles from "../components/Particles/Particles";
 import PastelBackground from "../components/PastelBackground/PastelBackground";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSocket } from "../contexts/SocketContext";
 
 export default function HomePage() {
     const [showTutorial, setShowTutorial] = useState(false);
     const [name, setName] = useState("");
+    const socket = useSocket();
+
+    useEffect(() => {
+        socket.on("connect", () => {
+            console.log("Connected to server");
+        });
+    }, [socket]);
+
+    useEffect(() => {
+        socket.on("disconnect", () => {
+            console.log("Disconnected from server");
+        });
+    }, [socket]);
 
     return (
         <div className="relative min-h-screen overflow-hidden">
@@ -92,6 +106,12 @@ export default function HomePage() {
                 )}
 
                 <div className="flex flex-col sm:flex-row gap-4">
+                    <Link
+                        to="/login"
+                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition"
+                    >
+                        Se connecter
+                    </Link>
                     <Link
                         to="/login"
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition"

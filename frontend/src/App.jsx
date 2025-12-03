@@ -3,9 +3,11 @@ import RoomPage from "./pages/RoomPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import { SocketProvider } from './contexts/SocketContext';
 
 function App() {
   return (
+    <SocketProvider>
     <Router>
       <Routes>
         {/* Page d’un salon dynamique */}
@@ -19,6 +21,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
       </Routes>
     </Router>
+    </SocketProvider>
   );
 }
 
