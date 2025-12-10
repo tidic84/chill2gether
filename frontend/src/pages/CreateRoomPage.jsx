@@ -51,7 +51,7 @@ export default function CreateRoomPage() {
     return (
         <div className="relative min-h-screen overflow-hidden">
             
-            <PastelBackground className="absolute inset-0 -z-20" />
+            <GridMotion className="absolute inset-0 -z-20" />
 
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white">
                 {/* Couche sombre semi-transparente */}
