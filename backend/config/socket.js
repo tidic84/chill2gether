@@ -38,7 +38,7 @@ function initializeSocket(server, allowedOrigins) {
         // Empêcher les nouveaux updates pendant 1 seconde
         setTimeout(() => {
             updateUsersThrottleMap.delete(roomId);
-        }, 1000);
+        }, 100);
     };
 
     // Nettoyage périodique des utilisateurs déconnectés (toutes les 10 secondes)
@@ -79,7 +79,7 @@ function initializeSocket(server, allowedOrigins) {
         });
 
         // Événement pour changer de nom d'utilisateur
-        socket.on('change-username', (newUsername) => {
+        socket.on('change-username', (newUsername, roomId) => {
             const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
             if (currentUser) {
                 anonymousUserStore.updateUsername(currentUser.userId, newUsername);

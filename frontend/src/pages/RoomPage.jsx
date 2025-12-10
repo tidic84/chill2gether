@@ -22,6 +22,9 @@ export default function RoomPage() {
     const [passwordError, setPasswordError] = useState("");
     const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
     const [users, setUsers] = useState([]);
+    const [showUsernamePopup, setShowUsernamePopup] = useState(false);
+    const [currentUsername, setCurrentUsername] = useState("");
+    const [newUsername, setNewUsername] = useState("");
 
     // Playlist simulée
     const playlistVideos = [
@@ -65,6 +68,42 @@ export default function RoomPage() {
         setCurrentVideoUrl(playlistVideos[0].url);
     };
 
+    // Écouter l'événement user-registered pour vérifier le username
+    useEffect(() => {
+        const handleUserRegistered = (data) => {
+            console.log("User registered:", data);
+            setCurrentUsername(data.username);
+
+            // Si le username commence par "User", afficher la popup
+            if (data.username.startsWith("User")) {
+                setShowUsernamePopup(true);
+            }
+        };
+
+        socket.on('user-registered', handleUserRegistered);
+
+        return () => {
+            socket.off('user-registered', handleUserRegistered);
+        };
+    }, [socket]);
+
+    // Écouter la confirmation de changement de username
+    useEffect(() => {
+        const handleUsernameUpdated = (data) => {
+            console.log("Username updated:", data);
+            setCurrentUsername(data.username);
+        };
+
+        socket.on('username-updated', (data) => {
+            handleUsernameUpdated(data);
+            socket.emit('get-users', roomId);
+        });
+
+        return () => {
+            socket.off('username-updated', handleUsernameUpdated);
+        };
+    }, [socket]);
+
     // Écouter les mises à jour de la liste des utilisateurs
     useEffect(() => {
         const handleUpdateUsers = (data) => {
@@ -95,6 +134,24 @@ export default function RoomPage() {
         } catch (error) {
             setPasswordError(error.message);
         }
+    };
+
+    // Gérer le changement de pseudo
+    const handleUsernameChange = () => {
+        if (newUsername.trim().length === 0) {
+            alert("Le nom d'utilisateur ne peut pas être vide");
+            return;
+        }
+
+        socket.emit('change-username', newUsername.trim());
+        setShowUsernamePopup(false);
+        setNewUsername("");
+    };
+
+    // Annuler le changement de pseudo
+    const handleCancelUsernameChange = () => {
+        setShowUsernamePopup(false);
+        setNewUsername("");
     };
 
     // Contenu fictif pour activities et permissions
@@ -251,21 +308,76 @@ export default function RoomPage() {
     // Room authentifiée - afficher le contenu
     if (roomState === 'authenticated' && currentVideoUrl) {
         return (
-            <MainLayout
-                video={<VideoPlayer url={currentVideoUrl} />}
-                chat={<Chat />}
-                users={<UserList users={users} />}
-                playlist={
-                    <Playlist
-                        videos={playlistVideos}
-                        onSelectVideo={(url) => setCurrentVideoUrl(url)}
-                    />
-                }
-                search={<YouTubeSearch onSelectVideo={setCurrentVideoUrl}/>}
-                history={history}
-                activities={activities}
-                permissions={permissions}
-            />
+            <>
+                <MainLayout
+                    video={<VideoPlayer url={currentVideoUrl} />}
+                    chat={<Chat />}
+                    users={<UserList users={users} />}
+                    playlist={
+                        <Playlist
+                            videos={playlistVideos}
+                            onSelectVideo={(url) => setCurrentVideoUrl(url)}
+                        />
+                    }
+                    search={<YouTubeSearch onSelectVideo={setCurrentVideoUrl}/>}
+                    history={history}
+                    activities={activities}
+                    permissions={permissions}
+                />
+
+                {/* Popup de changement de pseudo */}
+                {showUsernamePopup && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+                            <div className="text-center mb-6">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                    Personnalisez votre pseudo
+                                </h2>
+                                <p className="text-gray-600">
+                                    Votre pseudo actuel est <span className="font-mono font-semibold text-blue-600">{currentUsername}</span>
+                                </p>
+                                <p className="text-sm text-gray-500 mt-2">
+                                    Voulez-vous le modifier maintenant ?
+                                </p>
+                            </div>
+
+                            <div className="mb-6">
+                                <label htmlFor="newUsername" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Nouveau pseudo
+                                </label>
+                                <input
+                                    type="text"
+                                    id="newUsername"
+                                    value={newUsername}
+                                    onChange={(e) => setNewUsername(e.target.value)}
+                                    placeholder="Entrez votre nouveau pseudo"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleUsernameChange();
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleCancelUsernameChange}
+                                    className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold transition"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={handleUsernameChange}
+                                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+                                >
+                                    Modifier
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </>
         );
     }
 
