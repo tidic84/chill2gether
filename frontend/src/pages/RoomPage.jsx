@@ -21,6 +21,7 @@ export default function RoomPage() {
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
     const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
+    const [users, setUsers] = useState([]);
 
     // Playlist simulée
     const playlistVideos = [
@@ -63,6 +64,21 @@ export default function RoomPage() {
         socket.emit('join-room', roomId);
         setCurrentVideoUrl(playlistVideos[0].url);
     };
+
+    // Écouter les mises à jour de la liste des utilisateurs
+    useEffect(() => {
+        const handleUpdateUsers = (data) => {
+            console.log("Utilisateurs dans la room:", data);
+            setUsers(data);
+        };
+
+        socket.on('update-users', handleUpdateUsers);
+
+        // Cleanup : retirer le listener quand le composant est démonté
+        return () => {
+            socket.off('update-users', handleUpdateUsers);
+        };
+    }, [socket]);
 
     // Gérer la soumission du mot de passe
     const handlePasswordSubmit = async (e) => {
@@ -238,7 +254,7 @@ export default function RoomPage() {
             <MainLayout
                 video={<VideoPlayer url={currentVideoUrl} />}
                 chat={<Chat />}
-                users={<UserList />}
+                users={<UserList users={users} />}
                 playlist={
                     <Playlist
                         videos={playlistVideos}

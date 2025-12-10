@@ -18,6 +18,29 @@ function initializeSocket(server, allowedOrigins) {
         }
     });
 
+    // Map pour stocker les timers de throttling par room
+    const updateUsersThrottleMap = new Map();
+
+    // Fonction pour envoyer les updates throttlés (max 1 par seconde par room)
+    const sendThrottledUpdateUsers = (roomId) => {
+        if (updateUsersThrottleMap.has(roomId)) {
+            // Un update est déjà prévu, ne rien faire
+            return;
+        }
+
+        // Marquer qu'un update est en cours
+        updateUsersThrottleMap.set(roomId, true);
+
+        // Envoyer l'update immédiatement
+        const usersInRoom = anonymousUserStore.getUsersInRoom(roomId);
+        io.to(roomId).emit('update-users', usersInRoom);
+
+        // Empêcher les nouveaux updates pendant 1 seconde
+        setTimeout(() => {
+            updateUsersThrottleMap.delete(roomId);
+        }, 1000);
+    };
+
     // Nettoyage périodique des utilisateurs déconnectés (toutes les 10 secondes)
     setInterval(() => {
         anonymousUserStore.cleanupDisconnectedUsers(3600); // Supprime après 1 heure de déconnexion
@@ -65,6 +88,10 @@ function initializeSocket(server, allowedOrigins) {
             }
         });
 
+        socket.on('get-users', async (roomId) => {
+            sendThrottledUpdateUsers(roomId);
+        });
+
         // Événement de déconnexion
         socket.on('disconnect', async (reason) => {
             debugLog(`Client déconnecté: ${socket.id} - Raison: ${reason}`);
@@ -73,10 +100,16 @@ function initializeSocket(server, allowedOrigins) {
             if (socket.currentRoomId) {
                 await roomModel.decrementUserCount(socket.currentRoomId);
                 debugLog(`Compteur décrémenté pour la room ${socket.currentRoomId}`);
-            }
 
-            // Supprimer l'utilisateur du store
-            anonymousUserStore.removeUserBySocketId(socket.id);
+                // Supprimer l'utilisateur du store avant d'envoyer la mise à jour
+                anonymousUserStore.removeUserBySocketId(socket.id);
+
+                // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
+                sendThrottledUpdateUsers(socket.currentRoomId);
+            } else {
+                // Supprimer l'utilisateur du store
+                anonymousUserStore.removeUserBySocketId(socket.id);
+            }
         });
 
         // Rejoindre une room spécifique
@@ -88,6 +121,8 @@ function initializeSocket(server, allowedOrigins) {
 
             // Stocker la room actuelle dans le socket pour la gérer lors de la déconnexion
             socket.currentRoomId = roomId;
+
+            anonymousUserStore.setUserRoom(currentUser.userId, roomId);
 
             // Mettre à jour l'activité et le compteur d'utilisateurs de la room
             await roomModel.incrementUserCount(roomId);
@@ -108,6 +143,9 @@ function initializeSocket(server, allowedOrigins) {
                 socketId: socket.id,
                 timestamp: new Date()
             });
+
+            // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
+            sendThrottledUpdateUsers(roomId);
         });
 
         // Quitter une room
@@ -140,6 +178,9 @@ function initializeSocket(server, allowedOrigins) {
                 socketId: socket.id,
                 timestamp: new Date()
             });
+
+            // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
+            sendThrottledUpdateUsers(roomId);
         });
 
         // Gestion des erreurs

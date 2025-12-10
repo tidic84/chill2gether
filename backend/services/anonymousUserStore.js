@@ -236,7 +236,30 @@ class AnonymousUserStore {
 
         return cleanedCount;
     }
+
+    getUsersInRoom(roomId) {
+        const usersInRoom = [];
+        for (const user of this.users.values()) {
+            if (user.currentRoomId === roomId) {
+                usersInRoom.push({
+                    userId: user.userId,
+                    username: user.username,
+                    connectedAt: user.connectedAt
+                });
+            }
+        }
+        return usersInRoom;
+    }
+
+    setUserRoom(userId, roomId) {
+        const user = this.users.get(userId);
+        if (user) {
+            user.currentRoomId = roomId;
+        }
+    }
+
 }
+
 
 // Export une instance unique (singleton)
 module.exports = new AnonymousUserStore();
