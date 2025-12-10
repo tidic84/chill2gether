@@ -3,6 +3,10 @@ import Carousel from "../components/Carousel/Carousel";
 import SpotlightCard from "../components/SpotlightCard/SpotlightCard";
 import Stepper, { Step } from "../components/Stepper/Stepper";
 import GridMotion from "../components/GridMotion/GridMotion";
+import youtubeLogo from "../assets/Youtube_logo.png";
+import netflixLogo from "../assets/netflix_logo.png";
+import primeLogo from "../assets/prime_logo.png";
+import twitchLogo from "../assets/twitch_logo.png";
 
 import { useState, useEffect } from "react";
 import { useSocket } from "../contexts/SocketContext";
@@ -24,14 +28,22 @@ export default function HomePage() {
         });
     }, [socket]);
 
+    const items = [
+        <img key="youtube-logo" src={youtubeLogo} alt="YouTube" className="w-full h-full object-contain" />,
+        <img key="netflix-logo" src={netflixLogo} alt="netflix" className="w-full h-full object-contain" />,
+        <img key="prime-logo" src={primeLogo} alt="prime" className="w-full h-full object-contain" />,
+        <img key="twitch-logo" src={twitchLogo} alt="twitch" className="w-full h-full object-contain" />,
+
+    ];
+
     return (
         <div className="relative min-h-screen overflow-hidden">
-    
-            <GridMotion className="absolute inset-0 -z-20 pointer-events-none" />
+
+        <GridMotion items={items} className="absolute inset-0 -z-20 pointer-events-none" />
 
             {/* section background is now a semi-transparent overlay so particles stay visible */}
             <section className="relative z-10 flex flex-col items-center justify-center h-screen text-white">
-                
+
 
                 <h1 className="text-4xl font-bold mb-8">Chill2Gether</h1>
 
