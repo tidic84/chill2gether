@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { roomApi } from "../services/api";
-import Particles from "../components/Particles/Particles";
-import PastelBackground from "../components/PastelBackground/PastelBackground";
+import GridMotion from "../components/GridMotion/GridMotion";
 
 export default function CreateRoomPage() {
     const navigate = useNavigate();
@@ -51,19 +50,7 @@ export default function CreateRoomPage() {
 
     return (
         <div className="relative min-h-screen overflow-hidden">
-            {/* Particles en arrière-plan */}
-            <div className="absolute inset-0 -z-20" aria-hidden="true">
-                <Particles
-                    particleColors={['#ffffff', '#ffffff']}
-                    particleCount={200}
-                    particleSpread={10}
-                    speed={0.1}
-                    particleBaseSize={100}
-                    moveParticlesOnHover={true}
-                    alphaParticles={false}
-                    disableRotation={false}
-                />
-            </div>
+            
             <PastelBackground className="absolute inset-0 -z-20" />
 
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white">

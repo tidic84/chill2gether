@@ -9,8 +9,7 @@ import UserList from "../components/UserList/UserList";
 import Playlist from "../components/Playlist/Playlist";
 import YouTubeSearch from "../components/searchbar/YouTubeSearch";
 import History from "../components/History/History";
-import Particles from "../components/Particles/Particles";
-import PastelBackground from "../components/PastelBackground/PastelBackground";
+import GridMotion from "../components/GridMotion/GridMotion";
 
 export default function RoomPage() {
     const { roomId } = useParams();
@@ -160,18 +159,7 @@ export default function RoomPage() {
     if (roomState === 'password-required') {
         return (
             <div className="relative min-h-screen overflow-hidden">
-                <div className="absolute inset-0 -z-20" aria-hidden="true">
-                    <Particles
-                        particleColors={['#ffffff', '#ffffff']}
-                        particleCount={200}
-                        particleSpread={10}
-                        speed={0.1}
-                        particleBaseSize={100}
-                        moveParticlesOnHover={true}
-                        alphaParticles={false}
-                        disableRotation={false}
-                    />
-                </div>
+                
                 <PastelBackground className="absolute inset-0 -z-20" />
 
                 <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white">
