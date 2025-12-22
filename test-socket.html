@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Socket.IO</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Test de connexion Socket.IO</h1>
+    <div id="status">Connexion en cours...</div>
+    <div id="logs" style="font-family: monospace; white-space: pre; margin-top: 20px;"></div>
+
+    <div style="margin-top: 20px;">
+        <input type="text" id="roomId" placeholder="Room ID (ex: test-room)" value="test-room">
+        <button onclick="joinRoom()">Rejoindre Room</button>
+        <button onclick="testVideoPlay()">Test video:play</button>
+        <button onclick="testVideoPause()">Test video:pause</button>
+    </div>
+
+    <script>
+        const logsDiv = document.getElementById('logs');
+        const statusDiv = document.getElementById('status');
+
+        function log(msg) {
+            const timestamp = new Date().toLocaleTimeString();
+            logsDiv.textContent += `[${timestamp}] ${msg}\n`;
+            console.log(msg);
+        }
+
+        // Connexion au serveur Socket.IO
+        const socket = io('http://localhost:3000', {
+            auth: {
+                userId: null,
+                username: 'TestUser'
+            }
+        });
+
+        socket.on('connect', () => {
+            statusDiv.textContent = '✅ Connecté - Socket ID: ' + socket.id;
+            statusDiv.style.color = 'green';
+            log('✅ Connecté au serveur Socket.IO: ' + socket.id);
+        });
+
+        socket.on('connect_error', (error) => {
+            statusDiv.textContent = '❌ Erreur de connexion: ' + error.message;
+            statusDiv.style.color = 'red';
+            log('❌ Erreur de connexion: ' + error.message);
+        });
+
+        socket.on('disconnect', (reason) => {
+            statusDiv.textContent = '⚠️ Déconnecté: ' + reason;
+            statusDiv.style.color = 'orange';
+            log('⚠️ Déconnecté: ' + reason);
+        });
+
+        socket.on('user-registered', (data) => {
+            log('📝 User registered: ' + JSON.stringify(data));
+        });
+
+        socket.on('room-joined', (data) => {
+            log('🚪 Room joined: ' + JSON.stringify(data));
+        });
+
+        socket.on('video:play', (data) => {
+            log('▶️ Reçu video:play: ' + JSON.stringify(data));
+        });
+
+        socket.on('video:pause', (data) => {
+            log('⏸️ Reçu video:pause: ' + JSON.stringify(data));
+        });
+
+        socket.on('video:seek', (data) => {
+            log('⏩ Reçu video:seek: ' + JSON.stringify(data));
+        });
+
+        let currentRoomId = null;
+
+        function joinRoom() {
+            const roomId = document.getElementById('roomId').value;
+            if (!roomId) {
+                alert('Veuillez entrer un Room ID');
+                return;
+            }
+            currentRoomId = roomId;
+            socket.emit('join-room', roomId);
+            log('➡️ Émission join-room: ' + roomId);
+        }
+
+        function testVideoPlay() {
+            if (!currentRoomId) {
+                alert('Rejoignez d\'abord une room');
+                return;
+            }
+            const data = {
+                roomId: currentRoomId,
+                url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                time: 10.5
+            };
+            socket.emit('video:play', data);
+            log('➡️ Émission video:play: ' + JSON.stringify(data));
+        }
+
+        function testVideoPause() {
+            if (!currentRoomId) {
+                alert('Rejoignez d\'abord une room');
+                return;
+            }
+            const data = {
+                roomId: currentRoomId,
+                time: 15.2
+            };
+            socket.emit('video:pause', data);
+            log('➡️ Émission video:pause: ' + JSON.stringify(data));
+        }
+    </script>
+</body>
+</html>

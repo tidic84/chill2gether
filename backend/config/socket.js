@@ -183,6 +183,27 @@ function initializeSocket(server, allowedOrigins) {
             sendThrottledUpdateUsers(roomId);
         });
 
+        // Synchronisation vidéo - Play
+        socket.on('video:play', ({ roomId, url, time }) => {
+            debugLog(`video:play reçu de ${socket.id} dans room ${roomId}`, { url, time });
+            // Envoyer l'événement à tous les clients de la room SAUF l'émetteur
+            socket.to(roomId).emit('video:play', { url, time });
+        });
+
+        // Synchronisation vidéo - Pause
+        socket.on('video:pause', ({ roomId, time }) => {
+            debugLog(`video:pause reçu de ${socket.id} dans room ${roomId}`, { time });
+            // Envoyer l'événement à tous les clients de la room SAUF l'émetteur
+            socket.to(roomId).emit('video:pause', { time });
+        });
+
+        // Synchronisation vidéo - Seek
+        socket.on('video:seek', ({ roomId, time }) => {
+            debugLog(`video:seek reçu de ${socket.id} dans room ${roomId}`, { time });
+            // Envoyer l'événement à tous les clients de la room SAUF l'émetteur
+            socket.to(roomId).emit('video:seek', { time });
+        });
+
         // Gestion des erreurs
         socket.on('error', (error) => {
             debugLog('Erreur Socket.IO:', error);

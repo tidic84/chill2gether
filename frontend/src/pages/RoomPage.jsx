@@ -287,7 +287,7 @@ export default function RoomPage() {
         return (
             <>
                 <MainLayout
-                    video={<VideoPlayer url={currentVideoUrl} />}
+                    video={<VideoPlayer url={currentVideoUrl} roomId={roomId} />}
                     chat={<Chat />}
                     users={<UserList users={users} />}
                     playlist={
