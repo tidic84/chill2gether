@@ -2,6 +2,7 @@ const { Server } = require("socket.io");
 const anonymousUserStore = require("../services/anonymousUserStore");
 const roomModel = require("../model/roomModel");
 const { debugLog } = require("../utils/utils");
+const { initializeChatHandlers } = require("../services/chatService");
 
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
@@ -77,6 +78,9 @@ function initializeSocket(server, allowedOrigins) {
         io.emit('users-count', {
             count: anonymousUserStore.getUserCount()
         });
+
+        // Initialiser les gestionnaires de chat pour ce socket
+        initializeChatHandlers(io, socket);
 
         // Événement pour changer de nom d'utilisateur
         socket.on('change-username', (newUsername, roomId) => {
