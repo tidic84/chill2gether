@@ -1,10 +1,30 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export default function YouTubeSearch({ onSelectVideo }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
+  const containerRef = useRef(null);
+
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
+        setVisible(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -27,7 +47,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
   };
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       {/* Barre de recherche */}
       <div className="flex gap-2 p-4 bg-gray-900">
         <input
@@ -36,6 +56,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
           placeholder="Rechercher une vidéo YouTube..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => results.length > 0 && setVisible(true)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
         <button onClick={handleSearch} className="bg-blue-500 text-white px-4 rounded">

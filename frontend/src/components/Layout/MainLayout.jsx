@@ -1,7 +1,6 @@
 
 import ChatSidebar from "@/components/ChatSidebar/ChatSidebar";
 import BottomMenu from "@/components/BottomMenu/BottomMenu";
-import YoutubeSearch from "@/components/YoutubeSearch/YoutubeSearch";
 
 
 export default function MainLayout({ video, chat, users, playlist,search, history, activities, permissions }) {
