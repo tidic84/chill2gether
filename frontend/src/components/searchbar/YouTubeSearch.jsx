@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
 
 export default function YouTubeSearch({ onSelectVideo }) {
@@ -8,8 +8,69 @@ export default function YouTubeSearch({ onSelectVideo }) {
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isResultsAnimating, setIsResultsAnimating] = useState(false);
+  const [isSuggestionsAnimating, setIsSuggestionsAnimating] = useState(false);
   const containerRef = useRef(null);
   const isSearchingRef = useRef(false);
+
+  // Fonction optimisée pour récupérer les suggestions
+  const fetchSuggestions = useCallback((searchQuery) => {
+    if (!searchQuery.trim() || isSearchingRef.current) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Créer un nom de callback unique
+    const callbackName = `ytSuggestions${Date.now()}`;
+
+    // Créer le script pour JSONP
+    const script = document.createElement('script');
+    script.src = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(searchQuery)}&callback=${callbackName}`;
+
+    // Définir le callback global
+    window[callbackName] = (data) => {
+      if (data && data[1]) {
+        const suggestionsList = data[1].map(item => item[0]);
+        setSuggestions(suggestionsList);
+        setShowSuggestions(true);
+        setVisible(false);
+      }
+      delete window[callbackName];
+      document.body.removeChild(script);
+    };
+
+    // Gérer les erreurs
+    script.onerror = () => {
+      setSuggestions([]);
+      delete window[callbackName];
+      document.body.removeChild(script);
+    };
+
+    document.body.appendChild(script);
+  }, []);
+
+  // Animation pour les résultats
+  useEffect(() => {
+    if (visible) {
+      setIsResultsAnimating(false);
+      const timer = setTimeout(() => setIsResultsAnimating(true), 10);
+      return () => clearTimeout(timer);
+    } else {
+      setIsResultsAnimating(false);
+    }
+  }, [visible]);
+
+  // Animation pour les suggestions
+  useEffect(() => {
+    if (showSuggestions) {
+      setIsSuggestionsAnimating(false);
+      const timer = setTimeout(() => setIsSuggestionsAnimating(true), 10);
+      return () => clearTimeout(timer);
+    } else {
+      setIsSuggestionsAnimating(false);
+    }
+  }, [showSuggestions]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -29,34 +90,11 @@ export default function YouTubeSearch({ onSelectVideo }) {
     };
   }, []);
 
-  // Fetch suggestions en temps réel
+  // Fetch suggestions en temps réel avec debounce optimisé
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!query.trim() || isSearchingRef.current) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `http://localhost:3000/api/search/suggestions?q=${encodeURIComponent(query)}`
-        );
-        const data = await response.json();
-        setSuggestions(data || []);
-        setShowSuggestions(true);
-        setVisible(false); // Cache les résultats vidéo quand on affiche les suggestions
-      } catch (error) {
-        console.error("Erreur lors de la récupération des suggestions :", error);
-        setSuggestions([]);
-      }
-    };
-
-    // Debounce pour éviter trop d'appels API
-    const timeoutId = setTimeout(fetchSuggestions, 300);
-
+    const timeoutId = setTimeout(() => fetchSuggestions(query), 10);
     return () => clearTimeout(timeoutId);
-  }, [query]);
+  }, [query, fetchSuggestions]);
 
   const handleSearch = async (searchQuery) => {
     // Si searchQuery est un événement ou undefined, utiliser query
@@ -110,7 +148,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
         </div>
         <input
           type="text"
-          className="block w-full pl-11 pr-4 py-3 bg-white border border-zen-warm-stone rounded-xl text-sm text-zen-charcoal placeholder-zen-stone focus:outline-none focus:border-zen-sage focus:ring-2 focus:ring-zen-sage/20 transition-all shadow-sm"
+          className="block w-full pl-11 pr-4 py-3 bg-white border border-zen-warm-stone rounded-xl text-sm text-zen-charcoal placeholder-zen-stone outline-none focus:border-zen-stone transition-all shadow-sm"
           placeholder="Coller un lien YouTube ou rechercher une vidéo..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -120,11 +158,13 @@ export default function YouTubeSearch({ onSelectVideo }) {
 
       {/* Suggestions en temps réel */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-2 left-0 w-full max-h-[50vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-lg rounded-xl">
+        <div className={`absolute z-50 mt-2 left-0 w-full max-h-[50vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-lg rounded-xl transition-all duration-200 ease-out ${
+          isSuggestionsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+        }`}>
           {suggestions.map((suggestion, index) => (
             <div
               key={index}
-              className="px-4 py-2 cursor-pointer hover:bg-zen-light-cream text-zen-charcoal border-b border-zen-warm-stone last:border-0 transition-colors"
+              className="px-4 py-2 cursor-pointer hover:bg-zen-light-cream text-zen-charcoal border-b border-zen-warm-stone last:border-b-0"
               onClick={() => handleSuggestionClick(suggestion)}
             >
               {suggestion}
@@ -134,8 +174,10 @@ export default function YouTubeSearch({ onSelectVideo }) {
       )}
 
       {/* Results Dropdown */}
-      {visible && (
-        <div className="absolute z-50 mt-2 left-0 w-full max-h-[70vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-lg rounded-xl">
+      { visible && (
+        <div className={`absolute z-50 mt-1 w-full max-h-[72vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-xl rounded-xl transition-all duration-200 ease-out ${
+          isResultsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+        }`}>
           <div className="p-4 border-b border-zen-warm-stone flex justify-between items-center">
             <h3 className="font-semibold text-zen-charcoal">
               {results.length} résultat{results.length > 1 ? 's' : ''}
@@ -149,9 +191,19 @@ export default function YouTubeSearch({ onSelectVideo }) {
           </div>
 
           {loading && (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zen-sage mx-auto mb-2"></div>
-              <p className="text-zen-stone text-sm">Chargement...</p>
+            <div className="p-2 space-y-2">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <div key={i} className="flex gap-3 items-center p-3 rounded-lg animate-pulse">
+                  {/* Skeleton thumbnail */}
+                  <div className="w-32 h-20 bg-zen-warm-stone rounded-lg flex-shrink-0"></div>
+
+                  {/* Skeleton content */}
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-zen-warm-stone rounded w-3/4"></div>
+                    <div className="h-3 bg-zen-warm-stone rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -160,30 +212,31 @@ export default function YouTubeSearch({ onSelectVideo }) {
               Aucun résultat trouvé
             </p>
           )}
-
-          <div className="p-2 space-y-2">
-            {results.map((item) => (
-              <div
-                key={item.id.videoId}
-                className="flex gap-3 items-center cursor-pointer hover:bg-zen-light-cream p-3 rounded-lg transition-all"
-                onClick={() => handleSelect(item)}
-              >
-                <img
-                  src={item.snippet.thumbnails.default.url}
-                  alt={item.snippet.title}
-                  className="w-32 h-20 rounded-lg object-cover flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-zen-charcoal text-sm line-clamp-2">
-                    {item.snippet.title}
-                  </p>
-                  <p className="text-xs text-zen-stone mt-1">
-                    {item.snippet.channelTitle}
-                  </p>
+          {!loading &&(
+            <div className="p-2 space-y-2">
+              {results.map((item) => (
+                <div
+                  key={item.id.videoId}
+                  className="flex gap-3 items-center cursor-pointer hover:bg-zen-light-cream p-3 rounded-lg transition-all"
+                  onClick={() => handleSelect(item)}
+                >
+                  <img
+                    src={item.snippet.thumbnails.default.url}
+                    alt={item.snippet.title}
+                    className="w-32 h-20 rounded-lg object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-zen-charcoal text-sm line-clamp-2">
+                      {item.snippet.title}
+                    </p>
+                    <p className="text-xs text-zen-stone mt-1">
+                      {item.snippet.channelTitle}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -142,9 +142,9 @@ export default function Chat() {
                     </button>
                     <button
                         type="submit"
-                        className="p-2 bg-zen-sage text-white rounded-full hover:bg-zen-sage/80 transition-all shadow-md"
+                        className="p-2 bg-zen-sage text-white rounded-full hover:bg-zen-sage/80 transition-all shadow-md center-content"
                     >
-                        <Send size={16} className="ml-0.5" />
+                        <Send size={16} className="mx-0.5" />
                     </button>
                 </form>
             </div>
