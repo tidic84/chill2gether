@@ -4,13 +4,13 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
     const socket = useSocket();
 
     const handleSelectVideo = (index) => {
-        console.log("🎵 Sélection vidéo:", index);
+        console.log("Sélection vidéo:", index);
         onPlayVideo(index);
     };
 
     const handleDeleteVideo = (videoId, e) => {
         e.stopPropagation();
-        console.log("🗑️ Suppression vidéo:", videoId);
+        console.log("Suppression vidéo:", videoId);
         
         socket.emit('remove-from-playlist', {
             roomId,
@@ -23,7 +23,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
             <div className="space-y-3">
                 {videos.length === 0 && (
                     <div className="text-center p-8">
-                        <div className="text-6xl mb-4">🎵</div>
+                        <div className="text-6xl mb-4"></div>
                         <p className="text-gray-500 font-medium">
                             Aucune vidéo dans la playlist
                         </p>
@@ -57,7 +57,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                                 />
                                 {isCurrentVideo && (
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded">
-                                        <span className="text-2xl">▶️</span>
+                                        <span className="text-2xl"></span>
                                     </div>
                                 )}
                             </div>

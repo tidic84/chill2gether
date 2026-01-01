@@ -29,6 +29,7 @@ export default function RoomPage() {
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
     const [history, setHistory] = useState([]);
+    const [shouldAutoplay, setShouldAutoplay] = useState(true);
 
     // Vérifier si la room existe au chargement
     useEffect(() => {
@@ -47,7 +48,7 @@ export default function RoomPage() {
                     }
                 }
             } catch (error) {
-                console.error('❌ Erreur:', error);
+                console.error('Erreur:', error);
                 setRoomState('not-found');
             }
         };
@@ -107,12 +108,13 @@ export default function RoomPage() {
     // Écouter l'état initial de la playlist
     useEffect(() => {
         const handlePlaylistState = (data) => {
-            console.log("📋 Playlist state:", data);
+            console.log("Playlist state:", data);
 
             setPlaylist(data.videos);
             setCurrentVideoIndex(data.currentIndex);
 
-            if (data.videos.length > 0 && data.currentIndex >= 0 && data.isPlaying) {
+            // Toujours afficher la vidéo courante même si elle n'est pas en lecture
+            if (data.videos.length > 0 && data.currentIndex >= 0) {
                 const currentVideo = data.videos[data.currentIndex];
                 setCurrentVideoUrl(currentVideo.url);
             } else {
@@ -128,12 +130,13 @@ export default function RoomPage() {
     // Écouter les mises à jour de la playlist
     useEffect(() => {
         const handlePlaylistUpdated = (data) => {
-            console.log("🔄 Playlist updated:", data);
+            console.log("Playlist updated:", data);
 
             setPlaylist(data.videos);
             setCurrentVideoIndex(data.currentIndex);
 
-            if (data.videos.length > 0 && data.currentIndex >= 0 && data.isPlaying) {
+            // Toujours afficher la vidéo courante même si elle n'est pas en lecture
+            if (data.videos.length > 0 && data.currentIndex >= 0) {
                 const currentVideo = data.videos[data.currentIndex];
                 setCurrentVideoUrl(currentVideo.url);
             } else {
@@ -149,7 +152,7 @@ export default function RoomPage() {
     // Écouter les changements de vidéo (play-video et video-ended)
     useEffect(() => {
         const handleVideoChanged = (data) => {
-            console.log("📺 Video changed:", data);
+            console.log("Video changed:", data);
 
             setCurrentVideoIndex(data.videoIndex);
             setCurrentVideoUrl(data.video.url);
@@ -163,7 +166,7 @@ export default function RoomPage() {
     // Gérer les erreurs de la playlist
     useEffect(() => {
         socket.on('playlist-error', (data) => {
-            console.error('❌ Playlist error:', data.error);
+            console.error('Playlist error:', data.error);
             alert(data.error);
         });
 
@@ -172,7 +175,7 @@ export default function RoomPage() {
 
     useEffect(() => {
         const handleHistoryState = (data) => {
-            console.log("📜 History state:", data);
+            console.log("History state:", data);
             setHistory(data.history);
         };
 
@@ -183,7 +186,7 @@ export default function RoomPage() {
 
     useEffect(() => {
         const handleHistoryUpdated = (data) => {
-            console.log("🔄 History updated:", data);
+            console.log("History updated:", data);
             setHistory(data.history);
         };
 
@@ -194,6 +197,7 @@ export default function RoomPage() {
 
     // Gérer la sélection d'une vidéo depuis la recherche YouTube
     const handleSelectVideo = (video) => {
+        setShouldAutoplay(true); // Lancer automatiquement une nouvelle vidéo
         socket.emit('add-to-playlist', {
             roomId,
             video
@@ -202,7 +206,8 @@ export default function RoomPage() {
 
     // Gérer la fin de la vidéo
     const handleVideoEnded = () => {
-        console.log('⏭️ Video ended');
+        console.log('Video ended');
+        setShouldAutoplay(false); // Ne pas lancer automatiquement la prochaine
         socket.emit('video-ended', { roomId });
     };
 
@@ -242,7 +247,8 @@ export default function RoomPage() {
 
     // Play video via WebSocket uniquement
     const handlePlayVideo = (index) => {
-        console.log("🎬 Play video request:", index);
+        console.log("Play video request:", index);
+        setShouldAutoplay(true); // Lancer automatiquement quand l'utilisateur sélectionne
         socket.emit('play-video', { roomId, videoIndex: index });
     };
 
@@ -267,7 +273,7 @@ export default function RoomPage() {
         <History
             videos={history}
             onSelectVideo={(url) => {
-                console.log("📜 History select:", url);
+                console.log("History select:", url);
                 // Trouver l'index de la vidéo dans la playlist
                 const index = playlist.findIndex(v => v.url === url);
                 if (index >= 0) {
@@ -327,7 +333,7 @@ export default function RoomPage() {
 
                     <div className="relative z-10 w-full max-w-md p-8 bg-black/60 backdrop-blur-md rounded-xl shadow-lg">
                         <div className="text-center mb-6">
-                            <div className="text-5xl mb-4">🔒</div>
+                            <div className="text-5xl mb-4"></div>
                             <h1 className="text-3xl font-bold mb-2">Room Privée</h1>
                             <p className="text-gray-300">
                                 Cette room nécessite un mot de passe
@@ -389,6 +395,7 @@ export default function RoomPage() {
                         <VideoPlayer
                             url={currentVideoUrl}
                             onEnded={handleVideoEnded}
+                            autoplay={shouldAutoplay}
                         />
                     }
                     chat={<Chat />}

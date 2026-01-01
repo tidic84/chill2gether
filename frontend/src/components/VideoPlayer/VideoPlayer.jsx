@@ -24,7 +24,7 @@ function extractYouTubeID(url) {
     return null;
 }
 
-export default function VideoPlayer({ url, onEnded }) {
+export default function VideoPlayer({ url, onEnded, autoplay = true }) {
     const playerRef = useRef(null);
     const playerReadyRef = useRef(false);
     const loadedVideoIdRef = useRef(null);
@@ -84,7 +84,7 @@ export default function VideoPlayer({ url, onEnded }) {
                     width: '100%',
                     height: '100%',
                     playerVars: {
-                        autoplay: 1,
+                        autoplay: autoplay ? 1 : 0,  
                         controls: 1,
                         modestbranding: 1,
                         rel: 0,
@@ -93,7 +93,7 @@ export default function VideoPlayer({ url, onEnded }) {
                     },
                     events: {
                         onReady: (event) => {
-                            console.log("✅ Player prêt avec vidéo:", videoId);
+                            console.log("Player prêt avec vidéo:", videoId);
                             playerReadyRef.current = true;
                             loadedVideoIdRef.current = videoId;
                             setIsReady(true);
@@ -130,12 +130,12 @@ export default function VideoPlayer({ url, onEnded }) {
                                 101: 'Vidéo non disponible en embed',
                                 150: 'Vidéo non disponible en embed'
                             };
-                            console.error("❌ Erreur YouTube:", errors[event.data] || event.data);
+                            console.error("Erreur YouTube:", errors[event.data] || event.data);
                         }
                     }
                 });
             } catch (error) {
-                console.error("❌ Erreur création player:", error);
+                console.error("Erreur création player:", error);
             }
         };
 
@@ -145,7 +145,7 @@ export default function VideoPlayer({ url, onEnded }) {
         return () => {
             if (playerRef.current) {
                 try {
-                    console.log("🗑️ Destruction du player");
+                    console.log("Destruction du player");
                     playerRef.current.destroy();
                     playerRef.current = null;
                     playerReadyRef.current = false;
@@ -168,19 +168,27 @@ export default function VideoPlayer({ url, onEnded }) {
             return;
         }
 
-        console.log("🎵 Chargement nouvelle vidéo:", videoId);
+        console.log("🎵 Chargement nouvelle vidéo:", videoId, "autoplay:", autoplay);
 
         try {
-            // Utiliser loadVideoById pour changer de vidéo sans recréer le player
-            playerRef.current.loadVideoById({
-                videoId: videoId,
-                startSeconds: 0
-            });
+            // Utiliser cueVideoById si autoplay est false (charge sans lancer)
+            // Utiliser loadVideoById si autoplay est true (charge et lance)
+            if (autoplay) {
+                playerRef.current.loadVideoById({
+                    videoId: videoId,
+                    startSeconds: 0
+                });
+            } else {
+                playerRef.current.cueVideoById({
+                    videoId: videoId,
+                    startSeconds: 0
+                });
+            }
             loadedVideoIdRef.current = videoId;
         } catch (error) {
-            console.error("❌ Erreur chargement vidéo:", error);
+            console.error("Erreur chargement vidéo:", error);
         }
-    }, [videoId]);
+    }, [videoId, autoplay]); // Ajouter autoplay aux dépendances
 
     // Écouter les événements de synchronisation
     useEffect(() => {
@@ -232,7 +240,7 @@ export default function VideoPlayer({ url, onEnded }) {
     if (!url) {
         return (
             <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white">
-                <div className="text-6xl mb-4">🎬</div>
+                <div className="text-6xl mb-4"></div>
                 <p className="text-xl font-semibold">Aucune vidéo sélectionnée</p>
                 <p className="text-sm text-gray-400 mt-2">
                     Recherchez une vidéo pour commencer
@@ -244,7 +252,7 @@ export default function VideoPlayer({ url, onEnded }) {
     if (!videoId) {
         return (
             <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white">
-                <div className="text-6xl mb-4">⚠️</div>
+                <div className="text-6xl mb-4"></div>
                 <p className="text-xl font-semibold">URL YouTube invalide</p>
                 <p className="text-sm text-red-400 mt-2 px-4 text-center max-w-md">
                     Impossible d'extraire l'ID de: {url}
