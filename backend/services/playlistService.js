@@ -12,7 +12,10 @@ const { v4: uuidv4 } = require('uuid');
  *   currentIndex: 0,
  *   isPlaying: false,
  *   currentVideoStartTime: null,
- *   isLooping: false
+ *   isLooping: false,
+ *   history: [
+ *     { id, url, title, thumbnail, addedBy, addedAt, playedAt }
+ *   ]
  * }
  */
 class PlaylistService {
@@ -44,7 +47,8 @@ class PlaylistService {
                 currentIndex: 0,
                 isPlaying: false,
                 currentVideoStartTime: null,
-                isLooping: false
+                isLooping: false,
+                history: []
             }
             this.playlists.set(roomId, newPlaylist);
             debugLog(`Playlist créée pour la room ${roomId}`);
@@ -95,6 +99,21 @@ class PlaylistService {
     }
 
     /**
+     * Broadcast l'historique mis à jour à tous les utilisateurs de la room
+     * Émet l'événement 'history-updated'
+     */
+    broadcastHistoryUpdate(io, roomId) {
+        const playlist = this.getPlaylistByRoomId(roomId);
+        if (!playlist) return;
+
+        const data = {
+            history: playlist.history || []
+        };
+        io.to(roomId).emit('history-updated', data);
+        debugLog(`Mise à jour de l'historique diffusée à la room ${roomId}`);
+    }
+
+    /**
      * Calcule l'index de la vidéo suivante
      * @returns {number} Index suivant, 0 si loop activé, -1 si fin de playlist
      */
@@ -131,6 +150,7 @@ class PlaylistService {
     /**
      * Retourne l'état complet de la playlist (format propre pour le client)
      * Crée la playlist si elle n'existe pas
+     * Inclut l'historique des vidéos jouées
      */
     getPlaylistState(roomId) {
         const playlist = this.createPlaylistIfNotExists(roomId);
@@ -139,13 +159,14 @@ class PlaylistService {
             currentIndex: playlist.currentIndex,
             isPlaying: playlist.isPlaying,
             currentVideoStartTime: playlist.currentVideoStartTime,
-            isLooping: playlist.isLooping
+            isLooping: playlist.isLooping,
+            history: playlist.history || []
         };
     }
 
     /**
      * Ajoute une vidéo à la playlist
-     * Si c'est la première vidéo, démarre automatiquement la lecture
+     * Si c'est la première vidéo, démarre automatiquement la lecture et l'ajoute à l'historique
      * @throws {Error} Si données invalides ou playlist pleine (max 50)
      */
     addVideo(roomId, video, userId, username) {
@@ -170,11 +191,12 @@ class PlaylistService {
 
         playlist.videos.push(newVideo);
 
-        // Si première vidéo, démarrer la lecture
+        // Si première vidéo, démarrer la lecture et ajouter à l'historique
         if (playlist.videos.length === 1) {
             playlist.currentIndex = 0;
             playlist.isPlaying = true;
             playlist.currentVideoStartTime = new Date().toISOString();
+            this.addToHistory(roomId, newVideo);
         }
 
         debugLog(`Vidéo ajoutée à la playlist de la room ${roomId} par l'utilisateur ${userId}`);
@@ -263,10 +285,12 @@ class PlaylistService {
 
     /**
      * Change manuellement la vidéo en cours
+     * Ajoute automatiquement la vidéo à l'historique
+     * @param {object} io - Instance Socket.IO pour broadcaster l'historique (optionnel)
      * @returns {object} Données de la vidéo pour l'événement 'video-changed'
      * @throws {Error} Si index invalide
      */
-    playVideo(roomId, videoIndex) {
+    playVideo(roomId, videoIndex, io = null) {
         const playlist = this.getPlaylistByRoomId(roomId);
         if (!playlist) {
             throw new Error('Playlist non trouvée');
@@ -280,6 +304,9 @@ class PlaylistService {
         playlist.isPlaying = true;
         playlist.currentVideoStartTime = new Date().toISOString();
 
+        // Ajouter à l'historique avec broadcast automatique
+        this.addToHistory(roomId, playlist.videos[videoIndex], io);
+
         debugLog(`Lecture de la vidéo index ${videoIndex} dans la room ${roomId}`);
 
         return {
@@ -292,11 +319,13 @@ class PlaylistService {
 
     /**
      * Passe automatiquement à la vidéo suivante (autoplay)
+     * Ajoute automatiquement la vidéo à l'historique
+     * @param {object} io - Instance Socket.IO pour broadcaster l'historique (optionnel)
      * @returns {object} 
      *   - Si fin de playlist : { endOfPlaylist: true, playlist }
      *   - Si vidéo suivante : { endOfPlaylist: false, videoIndex, video, isPlaying, startTime }
      */
-    playNextVideo(roomId) {
+    playNextVideo(roomId, io = null) {
         const playlist = this.getPlaylistByRoomId(roomId);
         if (!playlist) {
             throw new Error('Playlist non trouvée');
@@ -320,6 +349,9 @@ class PlaylistService {
         playlist.isPlaying = true;
         playlist.currentVideoStartTime = new Date().toISOString();
 
+        // Ajouter à l'historique avec broadcast automatique
+        this.addToHistory(roomId, playlist.videos[nextIndex], io);
+
         debugLog(`Lecture de la vidéo index ${nextIndex} dans la room ${roomId}`);
 
         return {
@@ -329,6 +361,64 @@ class PlaylistService {
             isPlaying: true,
             startTime: playlist.currentVideoStartTime
         };
+    }
+
+    /**
+     * Ajoute une vidéo à l'historique de lecture de la room
+     * - Évite les doublons consécutifs (si même vidéo rejouée immédiatement)
+     * - Limite automatiquement l'historique à 50 vidéos (FIFO)
+     * - Ajoute un timestamp 'playedAt' pour tracer la date de lecture
+     * - Broadcast automatiquement aux clients si io est fourni
+     * 
+     * @param {string} roomId - ID de la room
+     * @param {object} video - Objet vidéo complet (avec id, url, title, etc.)
+     * @param {object} io - Instance Socket.IO pour broadcaster (optionnel)
+     * @throws {Error} Si playlist non trouvée
+     */
+    addToHistory(roomId, video, io = null) {
+        const playlist = this.getPlaylistByRoomId(roomId);
+        if (!playlist) {
+            throw new Error('Playlist non trouvée');
+        }
+
+        if (!playlist.history) {
+            playlist.history = [];
+        }
+
+        // Éviter d'ajouter la même vidéo consécutivement
+        const lastHistory = playlist.history[playlist.history.length - 1];
+        if (lastHistory && lastHistory.id === video.id) {
+            return;
+        }
+
+        playlist.history.push({
+            ...video,
+            playedAt: new Date().toISOString()
+        });
+
+        // Limiter l'historique à 50 vidéos max
+        if (playlist.history.length > 50) {
+            playlist.history.shift();
+        }
+
+        // Broadcaster si io fourni
+        if (io) {
+            this.broadcastHistoryUpdate(io, roomId);
+        }
+    }
+
+    /**
+     * Récupère l'historique complet des vidéos jouées dans une room
+     * @param {string} roomId - ID de la room
+     * @returns {Array} Liste des vidéos avec timestamp 'playedAt'
+     * @throws {Error} Si playlist non trouvée
+     */
+    getHistory(roomId) {
+        const playlist = this.getPlaylistByRoomId(roomId);
+        if (!playlist) {
+            throw new Error('Playlist non trouvée');
+        }
+        return playlist.history || [];
     }
 
 }

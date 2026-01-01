@@ -15,25 +15,20 @@ export default function RoomPage() {
     const { roomId } = useParams();
     const socket = useSocket();
 
-    const [roomState, setRoomState] = useState('loading'); // 'loading', 'not-found', 'password-required', 'authenticated'
+    const [roomState, setRoomState] = useState('loading');
     const [roomData, setRoomData] = useState(null);
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
-    const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
     const [users, setUsers] = useState([]);
     const [showUsernamePopup, setShowUsernamePopup] = useState(false);
     const [currentUsername, setCurrentUsername] = useState("");
     const [newUsername, setNewUsername] = useState("");
 
-    // Playlist simulée
-    const playlistVideos = [
-        { id: 1, title: "Vidéo 1", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
-        { id: 2, title: "Vidéo 2", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
-        { id: 3, title: "Vidéo 3", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
-        { id: 4, title: "Vidéo 4", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
-        { id: 5, title: "Vidéo 5", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
-        { id: 6, title: "Vidéo 6", url: "https://www.youtube.com/watch?v=enyUdIyZmjU" },
-    ];
+    // État de la playlist - UNIQUEMENT géré via WebSocket
+    const [playlist, setPlaylist] = useState([]);
+    const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+    const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
+    const [history, setHistory] = useState([]);
 
     // Vérifier si la room existe au chargement
     useEffect(() => {
@@ -44,7 +39,6 @@ export default function RoomPage() {
                 if (response.success) {
                     setRoomData(response.room);
 
-                    // Si la room ne nécessite pas de mot de passe, rejoindre directement
                     if (!response.room.requiresPassword) {
                         setRoomState('authenticated');
                         joinSocketRoom();
@@ -53,7 +47,7 @@ export default function RoomPage() {
                     }
                 }
             } catch (error) {
-                console.error('Erreur:', error);
+                console.error('❌ Erreur:', error);
                 setRoomState('not-found');
             }
         };
@@ -64,16 +58,15 @@ export default function RoomPage() {
     // Rejoindre la room via Socket.IO
     const joinSocketRoom = () => {
         socket.emit('join-room', roomId);
-        setCurrentVideoUrl(playlistVideos[0].url);
+        socket.emit('get-playlist', roomId);
+        socket.emit('get-history', roomId);
     };
 
-    // Écouter l'événement user-registered pour vérifier le username
+    // Écouter l'événement user-registered
     useEffect(() => {
         const handleUserRegistered = (data) => {
-            console.log("User registered:", data);
             setCurrentUsername(data.username);
 
-            // Si le username commence par "User", afficher la popup
             if (data.username.startsWith("User")) {
                 setShowUsernamePopup(true);
             }
@@ -89,34 +82,129 @@ export default function RoomPage() {
     // Écouter la confirmation de changement de username
     useEffect(() => {
         const handleUsernameUpdated = (data) => {
-            console.log("Username updated:", data);
             setCurrentUsername(data.username);
+            socket.emit('get-users', roomId);
         };
 
-        socket.on('username-updated', (data) => {
-            handleUsernameUpdated(data);
-            socket.emit('get-users', roomId);
-        });
+        socket.on('username-updated', handleUsernameUpdated);
 
         return () => {
             socket.off('username-updated', handleUsernameUpdated);
         };
-    }, [socket]);
+    }, [socket, roomId]);
 
     // Écouter les mises à jour de la liste des utilisateurs
     useEffect(() => {
-        const handleUpdateUsers = (data) => {
-            console.log("Utilisateurs dans la room:", data);
+        socket.on('update-users', (data) => {
             setUsers(data);
-        };
+        });
 
-        socket.on('update-users', handleUpdateUsers);
-
-        // Cleanup : retirer le listener quand le composant est démonté
         return () => {
-            socket.off('update-users', handleUpdateUsers);
+            socket.off('update-users');
         };
     }, [socket]);
+
+    // Écouter l'état initial de la playlist
+    useEffect(() => {
+        const handlePlaylistState = (data) => {
+            console.log("📋 Playlist state:", data);
+
+            setPlaylist(data.videos);
+            setCurrentVideoIndex(data.currentIndex);
+
+            if (data.videos.length > 0 && data.currentIndex >= 0 && data.isPlaying) {
+                const currentVideo = data.videos[data.currentIndex];
+                setCurrentVideoUrl(currentVideo.url);
+            } else {
+                setCurrentVideoUrl(null);
+            }
+        };
+
+        socket.on('playlist-state', handlePlaylistState);
+
+        return () => socket.off('playlist-state', handlePlaylistState);
+    }, [socket]);
+
+    // Écouter les mises à jour de la playlist
+    useEffect(() => {
+        const handlePlaylistUpdated = (data) => {
+            console.log("🔄 Playlist updated:", data);
+
+            setPlaylist(data.videos);
+            setCurrentVideoIndex(data.currentIndex);
+
+            if (data.videos.length > 0 && data.currentIndex >= 0 && data.isPlaying) {
+                const currentVideo = data.videos[data.currentIndex];
+                setCurrentVideoUrl(currentVideo.url);
+            } else {
+                setCurrentVideoUrl(null);
+            }
+        };
+
+        socket.on('playlist-updated', handlePlaylistUpdated);
+
+        return () => socket.off('playlist-updated', handlePlaylistUpdated);
+    }, [socket]);
+
+    // Écouter les changements de vidéo (play-video et video-ended)
+    useEffect(() => {
+        const handleVideoChanged = (data) => {
+            console.log("📺 Video changed:", data);
+
+            setCurrentVideoIndex(data.videoIndex);
+            setCurrentVideoUrl(data.video.url);
+        };
+
+        socket.on('video-changed', handleVideoChanged);
+
+        return () => socket.off('video-changed', handleVideoChanged);
+    }, [socket]);
+
+    // Gérer les erreurs de la playlist
+    useEffect(() => {
+        socket.on('playlist-error', (data) => {
+            console.error('❌ Playlist error:', data.error);
+            alert(data.error);
+        });
+
+        return () => socket.off('playlist-error');
+    }, [socket]);
+
+    useEffect(() => {
+        const handleHistoryState = (data) => {
+            console.log("📜 History state:", data);
+            setHistory(data.history);
+        };
+
+        socket.on('history-state', handleHistoryState);
+
+        return () => socket.off('history-state', handleHistoryState);
+    }, [socket]);
+
+    useEffect(() => {
+        const handleHistoryUpdated = (data) => {
+            console.log("🔄 History updated:", data);
+            setHistory(data.history);
+        };
+
+        socket.on('history-updated', handleHistoryUpdated);
+
+        return () => socket.off('history-updated', handleHistoryUpdated);
+    }, [socket]);
+
+    // Gérer la sélection d'une vidéo depuis la recherche YouTube
+    const handleSelectVideo = (video) => {
+        socket.emit('add-to-playlist', {
+            roomId,
+            video
+        });
+    };
+
+    // Gérer la fin de la vidéo
+    const handleVideoEnded = () => {
+        console.log('⏭️ Video ended');
+        socket.emit('video-ended', { roomId });
+    };
 
     // Gérer la soumission du mot de passe
     const handlePasswordSubmit = async (e) => {
@@ -147,10 +235,15 @@ export default function RoomPage() {
         setNewUsername("");
     };
 
-    // Annuler le changement de pseudo
     const handleCancelUsernameChange = () => {
         setShowUsernamePopup(false);
         setNewUsername("");
+    };
+
+    // Play video via WebSocket uniquement
+    const handlePlayVideo = (index) => {
+        console.log("🎬 Play video request:", index);
+        socket.emit('play-video', { roomId, videoIndex: index });
     };
 
     // Contenu fictif pour activities et permissions
@@ -170,10 +263,17 @@ export default function RoomPage() {
         </ul>
     );
 
-    const history = (
+    const historyComponent = (
         <History
-            videos={playlistVideos}
-            onSelectVideo={(url) => setCurrentVideoUrl(url)}
+            videos={history}
+            onSelectVideo={(url) => {
+                console.log("📜 History select:", url);
+                // Trouver l'index de la vidéo dans la playlist
+                const index = playlist.findIndex(v => v.url === url);
+                if (index >= 0) {
+                    handlePlayVideo(index);
+                }
+            }}
         />
     );
 
@@ -193,7 +293,6 @@ export default function RoomPage() {
     if (roomState === 'not-found') {
         return (
             <div className="relative min-h-screen overflow-hidden">
-                
                 <GridMotion className="absolute inset-0 -z-20" />
 
                 <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white">
@@ -221,7 +320,6 @@ export default function RoomPage() {
     if (roomState === 'password-required') {
         return (
             <div className="relative min-h-screen overflow-hidden">
-                
                 <GridMotion className="absolute inset-0 -z-20" />
 
                 <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white">
@@ -282,22 +380,29 @@ export default function RoomPage() {
         );
     }
 
-    // Room authentifiée - afficher le contenu
-    if (roomState === 'authenticated' && currentVideoUrl) {
+    // Room authentifiée
+    if (roomState === 'authenticated') {
         return (
             <>
                 <MainLayout
-                    video={<VideoPlayer url={currentVideoUrl} />}
+                    video={
+                        <VideoPlayer
+                            url={currentVideoUrl}
+                            onEnded={handleVideoEnded}
+                        />
+                    }
                     chat={<Chat />}
                     users={<UserList users={users} />}
                     playlist={
                         <Playlist
-                            videos={playlistVideos}
-                            onSelectVideo={(url) => setCurrentVideoUrl(url)}
+                            videos={playlist}
+                            currentIndex={currentVideoIndex}
+                            roomId={roomId}
+                            onPlayVideo={handlePlayVideo}
                         />
                     }
-                    search={<YouTubeSearch onSelectVideo={setCurrentVideoUrl}/>}
-                    history={history}
+                    search={<YouTubeSearch onSelectVideo={handleSelectVideo} />}
+                    history={historyComponent}
                     activities={activities}
                     permissions={permissions}
                 />

@@ -1,7 +1,7 @@
-const playlistService = require('../services/playlistService');
-const anonymousUserStore = require('../services/anonymousUserStore');
-const roomModel = require('../model/roomModel');
-const { debugLog } = require('../utils/utils');
+const playlistService = require('../../services/playlistService');
+const anonymousUserStore = require('../../services/anonymousUserStore');
+const roomModel = require('../../model/roomModel');
+const { debugLog } = require('../../utils/utils');
 
 /**
  * Initialise tous les handlers WebSocket pour la gestion des playlists
@@ -30,8 +30,29 @@ function initializePlaylistHandlers(io, socket) {
     });
 
     /**
+     * GET-HISTORY
+     * Envoie l'historique des vidéos jouées dans une room
+     * L'historique contient toutes les vidéos qui ont été lues, avec leur timestamp de lecture
+     */
+    socket.on('get-history', (roomId) => {
+        try {
+            if (!roomId) {
+                socket.emit('playlist-error', { error: 'Room ID is required to get history.' });
+                return;
+            }
+
+            const history = playlistService.getHistory(roomId);
+            socket.emit('history-state', { history });
+        } catch (error) {
+            debugLog(`Erreur lors de la récupération de l'historique pour la room ${roomId}: ${error}`);
+            socket.emit('playlist-error', { error: 'An error occurred while retrieving the history.' });
+        }
+    });
+
+    /**
      * ADD-TO-PLAYLIST
      * Ajoute une vidéo à la playlist et broadcast à tous les utilisateurs de la room
+     * Si c'est la première vidéo, elle est aussi ajoutée à l'historique (autoplay)
      */
     socket.on('add-to-playlist', (data) => {
         try {
@@ -51,6 +72,8 @@ function initializePlaylistHandlers(io, socket) {
             playlistService.addVideo(roomId, video, user.userId, user.username);
 
             playlistService.broadcastPlaylistUpdate(io, roomId);
+            // Broadcast l'historique si la première vidéo a été ajoutée à l'historique
+            playlistService.broadcastHistoryUpdate(io, roomId);
         } catch (error) {
             debugLog(`Erreur lors de l'ajout de la vidéo à la playlist pour la room ${roomId}: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while adding the video to the playlist.' });
@@ -76,10 +99,6 @@ function initializePlaylistHandlers(io, socket) {
                 return;
             }
 
-            // TODO: Implémenter les permissions (owner de la room ou créateur de la vidéo)
-            //const room = await roomModel.getRoomById(roomId);
-            //const isRoomOwner = room && room.creatorId === user.userId;
-
             playlistService.removeVideo(roomId, videoId, user.userId);
 
             playlistService.broadcastPlaylistUpdate(io, roomId);
@@ -87,7 +106,7 @@ function initializePlaylistHandlers(io, socket) {
             debugLog(`Erreur lors de la suppression de la vidéo de la playlist pour la room ${roomId}: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while removing the video from the playlist.' });
         }
-    })
+    });
 
     /**
      * REORDER-PLAYLIST
@@ -114,12 +133,13 @@ function initializePlaylistHandlers(io, socket) {
             debugLog(`Erreur lors du réordonnancement de la playlist pour la room ${roomId}: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while reordering the playlist.' });
         }
-    })
+    });
 
     /**
      * PLAY-VIDEO
      * Change manuellement la vidéo en cours de lecture
-     * Émet 'video-changed' (pas 'playlist-updated')
+     * Ajoute automatiquement la vidéo à l'historique
+     * Émet 'video-changed' et 'history-updated'
      */
     socket.on('play-video', (data) => {
         try {
@@ -136,19 +156,21 @@ function initializePlaylistHandlers(io, socket) {
                 return;
             }
 
-            const videoData = playlistService.playVideo(roomId, videoIndex);
+            // playVideo ajoute automatiquement à l'historique et broadcast
+            const videoData = playlistService.playVideo(roomId, videoIndex, io); 
 
             io.to(roomId).emit('video-changed', videoData);
         } catch (error) {
             debugLog(`Erreur lors de la lecture de la vidéo dans la playlist pour la room ${roomId}: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while playing the video from the playlist.' });
         }
-    })
+    });
 
     /**
      * VIDEO-ENDED
      * Gère la fin d'une vidéo et passe automatiquement à la suivante
-     * Émet 'video-changed' si vidéo suivante, 'playlist-updated' si fin de playlist
+     * Ajoute automatiquement la vidéo suivante à l'historique
+     * Émet 'video-changed' et 'history-updated' si vidéo suivante, 'playlist-updated' si fin de playlist
      */
     socket.on('video-ended', (data) => {
         try {
@@ -159,7 +181,8 @@ function initializePlaylistHandlers(io, socket) {
                 return;
             }
 
-            const result = playlistService.playNextVideo(roomId);
+            // playNextVideo ajoute automatiquement à l'historique et broadcast
+            const result = playlistService.playNextVideo(roomId, io);
 
             if (result.endOfPlaylist) {
                 // Fin de playlist : arrêt de la lecture
@@ -180,7 +203,88 @@ function initializePlaylistHandlers(io, socket) {
             debugLog(`Erreur lors du traitement de la fin de la vidéo dans la playlist pour la room ${roomId}: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while handling the end of the video.' });
         }
-    })
+    });
+
+    /**
+     * VIDEO-PLAY
+     * Synchronise le play entre tous les utilisateurs
+     */
+    socket.on('video-play', (data) => {
+        try {
+            const { roomId, time } = data;
+
+            if (!roomId) {
+                socket.emit('playlist-error', { error: 'Room ID requis' });
+                return;
+            }
+
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
+            
+            // Broadcast à tous SAUF l'émetteur
+            socket.to(roomId).emit('video-play-sync', {
+                time: time || 0,
+                username: user?.username
+            });
+
+            debugLog(`Play synchronisé dans ${roomId} à ${time}s par ${user?.username}`);
+        } catch (error) {
+            debugLog(`Erreur lors de la synchronisation play: ${error}`);
+        }
+    });
+
+    /**
+     * VIDEO-PAUSE
+     * Synchronise le pause entre tous les utilisateurs
+     */
+    socket.on('video-pause', (data) => {
+        try {
+            const { roomId, time } = data;
+
+            if (!roomId) {
+                socket.emit('playlist-error', { error: 'Room ID requis' });
+                return;
+            }
+
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
+            
+            // Broadcast à tous SAUF l'émetteur
+            socket.to(roomId).emit('video-pause-sync', {
+                time: time || 0,
+                username: user?.username
+            });
+
+            debugLog(`Pause synchronisé dans ${roomId} à ${time}s par ${user?.username}`);
+        } catch (error) {
+            debugLog(`Erreur lors de la synchronisation pause: ${error}`);
+        }
+    });
+
+    /**
+     * VIDEO-SEEK
+     * Synchronise le seek (déplacement dans la timeline) entre tous les utilisateurs
+     */
+    socket.on('video-seek', (data) => {
+        try {
+            const { roomId, time } = data;
+
+            if (!roomId || time === undefined) {
+                socket.emit('playlist-error', { error: 'Room ID et time requis' });
+                return;
+            }
+
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
+            
+            // Broadcast à tous SAUF l'émetteur
+            socket.to(roomId).emit('video-seek-sync', {
+                time,
+                username: user?.username
+            });
+
+            debugLog(`Seek synchronisé dans ${roomId} à ${time}s par ${user?.username}`);
+        } catch (error) {
+            debugLog(`Erreur lors de la synchronisation seek: ${error}`);
+        }
+    });
 
 }
 
