@@ -3,6 +3,8 @@ const anonymousUserStore = require("../services/anonymousUserStore");
 const roomModel = require("../model/roomModel");
 const { debugLog } = require("../utils/utils");
 const { initializeChatHandlers } = require("../services/chatService");
+const { initializePlaylistHandlers } = require('./handlers/playlistHandlers');
+const playlistService = require("../services/playlistService");
 
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
@@ -50,7 +52,7 @@ function initializeSocket(server, allowedOrigins) {
     // Gestion des connexions
     io.on('connection', (socket) => {
         debugLog(`Nouveau client connecté: ${socket.id}`);
-        
+
         // ### Partie Vérifier si l'utilisateur a déjà un userId (reconnexion)
         const existingUserId = socket.handshake.auth.userId;
         debugLog("existingUserId", existingUserId);
@@ -81,6 +83,9 @@ function initializeSocket(server, allowedOrigins) {
 
         // Initialiser les gestionnaires de chat pour ce socket
         initializeChatHandlers(io, socket);
+
+        // Initialiser les gestionnaires de playlist pour ce socket
+        initializePlaylistHandlers(io, socket);
 
         // Événement pour changer de nom d'utilisateur
         socket.on('change-username', (newUsername, roomId) => {
@@ -113,6 +118,14 @@ function initializeSocket(server, allowedOrigins) {
             } else {
                 // Supprimer l'utilisateur du store
                 anonymousUserStore.removeUserBySocketId(socket.id);
+            }
+
+            // Si dernier utilisateur de la room, supprimer la playlist
+            if (socket.currentRoomId) {
+                const usersInRoom = anonymousUserStore.getUsersInRoom(socket.currentRoomId);
+                if (usersInRoom.length === 0) {
+                    playlistService.deletePlaylist(socket.currentRoomId);
+                }
             }
         });
 
