@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
 
 export default function YouTubeSearch({ onSelectVideo }) {
@@ -12,6 +12,43 @@ export default function YouTubeSearch({ onSelectVideo }) {
   const [isSuggestionsAnimating, setIsSuggestionsAnimating] = useState(false);
   const containerRef = useRef(null);
   const isSearchingRef = useRef(false);
+
+  // Fonction optimisée pour récupérer les suggestions
+  const fetchSuggestions = useCallback((searchQuery) => {
+    if (!searchQuery.trim() || isSearchingRef.current) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Créer un nom de callback unique
+    const callbackName = `ytSuggestions${Date.now()}`;
+
+    // Créer le script pour JSONP
+    const script = document.createElement('script');
+    script.src = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(searchQuery)}&callback=${callbackName}`;
+
+    // Définir le callback global
+    window[callbackName] = (data) => {
+      if (data && data[1]) {
+        const suggestionsList = data[1].map(item => item[0]);
+        setSuggestions(suggestionsList);
+        setShowSuggestions(true);
+        setVisible(false);
+      }
+      delete window[callbackName];
+      document.body.removeChild(script);
+    };
+
+    // Gérer les erreurs
+    script.onerror = () => {
+      setSuggestions([]);
+      delete window[callbackName];
+      document.body.removeChild(script);
+    };
+
+    document.body.appendChild(script);
+  }, []);
 
   // Animation pour les résultats
   useEffect(() => {
@@ -53,34 +90,11 @@ export default function YouTubeSearch({ onSelectVideo }) {
     };
   }, []);
 
-  // Fetch suggestions en temps réel
+  // Fetch suggestions en temps réel avec debounce optimisé
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!query.trim() || isSearchingRef.current) {
-        setSuggestions([]);
-        setShowSuggestions(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `http://localhost:3000/api/search/suggestions?q=${encodeURIComponent(query)}`
-        );
-        const data = await response.json();
-        setSuggestions(data || []);
-        setShowSuggestions(true);
-        setVisible(false); // Cache les résultats vidéo quand on affiche les suggestions
-      } catch (error) {
-        console.error("Erreur lors de la récupération des suggestions :", error);
-        setSuggestions([]);
-      }
-    };
-
-    // Debounce pour éviter trop d'appels API
-    const timeoutId = setTimeout(fetchSuggestions, 300);
-
+    const timeoutId = setTimeout(() => fetchSuggestions(query), 10);
     return () => clearTimeout(timeoutId);
-  }, [query]);
+  }, [query, fetchSuggestions]);
 
   const handleSearch = async (searchQuery) => {
     // Si searchQuery est un événement ou undefined, utiliser query

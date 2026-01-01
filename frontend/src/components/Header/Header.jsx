@@ -13,7 +13,7 @@ export default function Header({ roomCode }) {
     };
 
     return (
-        <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-zen-warm-stone px-6 py-4 shadow-sm">
+        <header className="relative top-0 z-50 bg-white/90 backdrop-blur-md border-b border-zen-warm-stone px-6 py-4 shadow-sm">
             <div className="max-w-[1600px] mx-auto flex justify-between items-center">
                 {/* Logo */}
                 <div className="flex items-center gap-3">

@@ -37,15 +37,38 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                                     : "hover:bg-white hover:shadow-sm"
                             }`}
                         >
-                            {/* Index Badge */}
-                            <div
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                                    index === currentIndex
-                                        ? "bg-zen-sage text-white"
-                                        : "bg-zen-warm-stone text-zen-dark-stone"
-                                }`}
-                            >
-                                {index + 1}
+                            {/* Thumbnail avec Index Badge */}
+                            <div className="relative flex-shrink-0">
+                                {video.thumbnail ? (
+                                    <>
+                                        <img
+                                            src={video.thumbnail}
+                                            alt={video.title}
+                                            className="w-24 h-16 rounded-lg object-cover"
+                                        />
+                                        {/* Index Badge sur le thumbnail */}
+                                        <div
+                                            className={`absolute top-1 left-1 w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
+                                                index === currentIndex
+                                                    ? "bg-zen-sage text-white"
+                                                    : "bg-black/70 text-white"
+                                            }`}
+                                        >
+                                            {index + 1}
+                                        </div>
+                                    </>
+                                ) : (
+                                    /* Fallback si pas de thumbnail */
+                                    <div
+                                        className={`w-24 h-16 rounded-lg flex items-center justify-center text-xs font-bold ${
+                                            index === currentIndex
+                                                ? "bg-zen-sage text-white"
+                                                : "bg-zen-warm-stone text-zen-dark-stone"
+                                        }`}
+                                    >
+                                        {index + 1}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Video Info */}
