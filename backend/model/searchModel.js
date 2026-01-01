@@ -18,3 +18,17 @@ export async function searchYouTube(query, apiKey) {
     throw new Error("Erreur lors de la recherche YouTube");
   }
 }
+
+export async function getYouTubeSuggestions(query) {
+  const url = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    // L'API retourne un tableau où data[1] contient les suggestions
+    return data[1] || [];
+  } catch (error) {
+    console.error("Erreur lors de la requête de suggestions:", error);
+    throw new Error("Erreur lors de la récupération des suggestions");
+  }
+}
