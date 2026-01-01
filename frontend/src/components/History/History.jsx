@@ -6,23 +6,61 @@ export default function History({ videos = [], onSelectVideo }) {
 
     const handleSelect = (index) => {
         setCurrentIndex(index);
-        if (onSelectVideo) onSelectVideo(videos[index].url); // informe le parent
+        if (onSelectVideo) onSelectVideo(videos[index].url);
     };
 
     return (
-        <div className="h-full overflow-y-auto">
-            <ul className="space-y-1">
-                {videos.map((video, index) => (
-                    <li
-                        key={`${video.id}-${index}`}
-                        onClick={() => handleSelect(index)}
-                        className={`cursor-pointer px-2 py-1 rounded ${index === currentIndex ? "bg-blue-500 text-white" : "bg-gray-100 text-black"
+        <div className="h-full overflow-y-auto px-4 pb-4">
+            <div className="space-y-2">
+                {videos.length === 0 ? (
+                    <div className="text-center text-zen-stone py-8 text-sm">
+                        Aucune vidéo dans l'historique
+                    </div>
+                ) : (
+                    videos.map((video, index) => (
+                        <div
+                            key={`${video.id}-${index}`}
+                            onClick={() => handleSelect(index)}
+                            className={`relative flex gap-3 items-center p-2 rounded-lg transition-all cursor-pointer ${
+                                index === currentIndex
+                                    ? "bg-zen-sage/20 shadow-sm"
+                                    : "bg-zen-sage/10 hover:shadow-sm"
                             }`}
-                    >
-                        {video.title}
-                    </li>
-                ))}
-            </ul>
+                        >
+                            {/* Thumbnail */}
+                            <div className="relative flex-shrink-0">
+                                {video.thumbnail ? (
+                                    <img
+                                        src={video.thumbnail}
+                                        alt={video.title}
+                                        className="w-24 h-16 rounded-lg object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-24 h-16 rounded-lg bg-zen-warm-stone flex items-center justify-center">
+                                        <span className="text-xs text-zen-dark-stone">
+                                            Pas d'image
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Video Info */}
+                            <div className="flex-1 min-w-0">
+                                <p
+                                    className={`text-sm font-semibold truncate ${
+                                        index === currentIndex ? "text-zen-sage" : "text-zen-medium-stone"
+                                    }`}
+                                >
+                                    {video.title}
+                                </p>
+                                <p className="text-xs text-zen-stone">
+                                    {video.addedBy?.username ? `Ajouté par ${video.addedBy.username}` : (video.duration || "Durée inconnue")}
+                                </p>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
     );
 }

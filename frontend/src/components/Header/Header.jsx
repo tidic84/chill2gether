@@ -29,7 +29,7 @@ export default function Header({ roomCode }) {
                 {roomCode && (
                     <div
                         onClick={handleCopyCode}
-                        className="flex items-center gap-4 bg-zen-light-cream border border-zen-warm-stone pl-5 pr-2 py-1.5 rounded-full shadow-sm hover:shadow-md hover:border-zen-sage/30 transition-all cursor-pointer group"
+                        className="flex items-center gap-4 bg-zen-light-cream border border-zen-warm-stone pl-5 pr-2 py-1 rounded-full shadow-sm hover:shadow-md hover:border-zen-sage/30 transition-all cursor-pointer group"
                     >
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-zen-sage animate-pulse"></div>
