@@ -12,7 +12,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
     const handleDeleteVideo = (videoId, e) => {
         e.stopPropagation();
         console.log("Suppression vidéo:", videoId);
-        
+
         socket.emit('remove-from-playlist', {
             roomId,
             videoId
@@ -33,8 +33,8 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                             onClick={() => handleSelectVideo(index)}
                             className={`relative flex gap-3 items-center p-2 rounded-lg transition-all group cursor-pointer ${
                                 index === currentIndex
-                                    ? "bg-zen-sage/10 shadow-sm"
-                                    : "hover:bg-white hover:shadow-sm"
+                                    ? "bg-zen-sage/20 shadow-sm"
+                                    : "bg-zen-sage/10 hover:shadow-sm"
                             }`}
                         >
                             {/* Thumbnail avec Index Badge */}

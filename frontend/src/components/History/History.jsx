@@ -14,7 +14,7 @@ export default function History({ videos = [], onSelectVideo }) {
             <ul className="space-y-1">
                 {videos.map((video, index) => (
                     <li
-                        key={video.id}
+                        key={`${video.id}-${index}`}
                         onClick={() => handleSelect(index)}
                         className={`cursor-pointer px-2 py-1 rounded ${index === currentIndex ? "bg-blue-500 text-white" : "bg-gray-100 text-black"
                             }`}
