@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Search } from "lucide-react";
 
 export default function YouTubeSearch({ onSelectVideo }) {
   const [query, setQuery] = useState("");
@@ -47,52 +48,61 @@ export default function YouTubeSearch({ onSelectVideo }) {
   };
 
   return (
-    <div ref={containerRef} className="relative">
-      {/* Barre de recherche */}
-      <div className="flex gap-2 p-4 bg-gray-900">
+    <div ref={containerRef} className="relative w-full">
+      {/* Search Bar */}
+      <div className="relative w-full">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="h-4 w-4 text-zen-stone" />
+        </div>
         <input
-          className="border rounded p-2 w-full"
           type="text"
-          placeholder="Rechercher une vidéo YouTube..."
+          className="block w-full pl-11 pr-4 py-3 bg-white border border-zen-warm-stone rounded-xl text-sm text-zen-charcoal placeholder-zen-stone focus:outline-none focus:border-zen-sage focus:ring-2 focus:ring-zen-sage/20 transition-all shadow-sm"
+          placeholder="Coller un lien YouTube ou rechercher une vidéo..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setVisible(true)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
-        <button onClick={handleSearch} className="bg-blue-500 text-white px-4 rounded">
-          Rechercher
-        </button>
       </div>
 
-      {/* Résultats (superposés) */}
+      {/* Results Dropdown */}
       {visible && (
-        <div className="absolute z-50 top-16 left-0 w-full max-h-[70vh] overflow-y-auto  bg-black bg-opacity-95 shadow-lg rounded p-4 ">
-          <div className="flex justify-between items-center mb-2 ">
-            <h3 className="font-semibold text-white">Résultats</h3>
+        <div className="absolute z-50 mt-2 left-0 w-full max-h-[70vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-lg rounded-xl">
+          <div className="p-4 border-b border-zen-warm-stone flex justify-between items-center">
+            <h3 className="font-semibold text-zen-charcoal">Résultats de recherche</h3>
             <button
               onClick={() => setVisible(false)}
-              className="text-red-500 font-medium hover:underline"
+              className="text-zen-stone hover:text-zen-terracotta font-medium transition-colors text-sm"
             >
               Fermer ✕
             </button>
           </div>
 
-          {loading && <p className="text-white">Chargement...</p>}
-          <div className="mt-4 space-y-3 ">
+          {loading && (
+            <div className="p-8 text-center text-zen-stone">
+              Chargement...
+            </div>
+          )}
+
+          <div className="p-2 space-y-2">
             {results.map((item) => (
               <div
                 key={item.id.videoId}
-                className="flex gap-3 items-center cursor-pointer hover:bg-gray-100 p-2 rounded"
+                className="flex gap-3 items-center cursor-pointer hover:bg-zen-light-cream p-3 rounded-lg transition-all"
                 onClick={() => handleSelect(`https://www.youtube.com/watch?v=${item.id.videoId}`)}
               >
                 <img
                   src={item.snippet.thumbnails.default.url}
                   alt={item.snippet.title}
-                  className="w-24 h-16 rounded"
+                  className="w-32 h-20 rounded-lg object-cover flex-shrink-0"
                 />
-                <div>
-                  <p className="font-medium text-red-600">{item.snippet.title}</p>
-                  <p className="text-sm text-gray-500">{item.snippet.channelTitle}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-zen-charcoal text-sm line-clamp-2">
+                    {item.snippet.title}
+                  </p>
+                  <p className="text-xs text-zen-stone mt-1">
+                    {item.snippet.channelTitle}
+                  </p>
                 </div>
               </div>
             ))}

@@ -4,40 +4,46 @@ export default function BottomMenu({ users, activities, permissions }) {
     const [activeTab, setActiveTab] = useState("users");
 
     return (
-        <div className="w-full h-full bg-gray-700 text-gray-100 rounded-3xl shadow-lg overflow-hidden flex flex-col">
-            {/* Header des onglets */}
-            <div className="flex w-full ">
+        <div className="w-full h-full bg-white text-zen-charcoal flex flex-col">
+            {/* Tab Navigation */}
+            <div className="flex border-b border-zen-warm-stone px-6 pt-4">
                 <button
-                    className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === "users"
-                        ? "bg-gray-700"
-                        : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                        }`}
                     onClick={() => setActiveTab("users")}
+                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative mr-6 ${
+                        activeTab === "users" ? "text-zen-sage" : "text-zen-stone hover:text-zen-dark-stone"
+                    }`}
                 >
                     Utilisateurs
+                    {activeTab === "users" && (
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-zen-sage rounded-t-full"></div>
+                    )}
                 </button>
                 <button
-                    className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === "activities"
-                        ? "bg-gray-700"
-                        : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                        }`}
                     onClick={() => setActiveTab("activities")}
+                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative mr-6 ${
+                        activeTab === "activities" ? "text-zen-sage" : "text-zen-stone hover:text-zen-dark-stone"
+                    }`}
                 >
                     Activités
+                    {activeTab === "activities" && (
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-zen-sage rounded-t-full"></div>
+                    )}
                 </button>
                 <button
-                    className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === "permissions"
-                        ? "bg-gray-700"
-                        : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                        }`}
                     onClick={() => setActiveTab("permissions")}
+                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative ${
+                        activeTab === "permissions" ? "text-zen-sage" : "text-zen-stone hover:text-zen-dark-stone"
+                    }`}
                 >
-                    Permissions
+                    Paramètres
+                    {activeTab === "permissions" && (
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-zen-sage rounded-t-full"></div>
+                    )}
                 </button>
             </div>
 
-            {/* Contenu adaptatif avec scroll si nécessaire */}
-            <div className="flex-1 min-h-[40vh] overflow-y-auto p-3">
+            {/* Tab Content */}
+            <div className="p-6 bg-zen-light-cream flex-1 overflow-y-auto">
                 {activeTab === "users" && users}
                 {activeTab === "activities" && activities}
                 {activeTab === "permissions" && permissions}

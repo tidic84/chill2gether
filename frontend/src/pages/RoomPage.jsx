@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { roomApi } from "../services/api";
 import { useSocket } from "../contexts/SocketContext";
 import MainLayout from "../components/Layout/MainLayout";
+import Header from "../components/Header/Header";
 import VideoPlayer from "../components/VideoPlayer/VideoPlayer";
 import Chat from "../components/Chat/Chat";
 import UserList from "../components/UserList/UserList";
@@ -286,6 +287,7 @@ export default function RoomPage() {
     if (roomState === 'authenticated' && currentVideoUrl) {
         return (
             <>
+                <Header roomCode={roomId} />
                 <MainLayout
                     video={<VideoPlayer url={currentVideoUrl} />}
                     chat={<Chat />}

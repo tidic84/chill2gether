@@ -1,6 +1,7 @@
 // src/components/Chat/Chat.jsx
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
+import { Send, Smile } from "lucide-react";
 import socket from "../../services/socket";
 
 export default function Chat() {
@@ -63,55 +64,89 @@ export default function Chat() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-gray-900 text-gray-100 p-4">
+        <div className="flex flex-col h-full bg-white relative">
+            {/* Chat Header */}
+            <div className="p-3 flex justify-between items-center border-b border-zen-warm-stone">
+                <span className="text-xs font-bold text-zen-stone uppercase tracking-widest px-2">
+                    Live Chat
+                </span>
+                <span className="text-xs bg-zen-cream text-zen-dark-stone px-2 py-0.5 rounded text-[10px] font-bold border border-zen-warm-stone">
+                    EN LIGNE
+                </span>
+            </div>
+
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto mb-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
-                {messages.map((m, i) => (
-                    <div
-                        key={i}
-                        className="bg-gray-800 rounded-2xl px-3 py-2 shadow-sm"
-                    >
-                        <div className="flex items-baseline justify-between mb-1">
-                            <span className="text-xs font-semibold text-blue-400">
-                                {m.username}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                                {formatTime(m.timestamp)}
-                            </span>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((m, i) => {
+                    // Alternate colors for different users
+                    const isCurrentUser = false; // TODO: compare with actual current user
+                    const colorClass = isCurrentUser
+                        ? 'bg-zen-sage text-white'
+                        : 'bg-zen-cream text-zen-charcoal border border-zen-warm-stone';
+                    const roundedClass = isCurrentUser
+                        ? 'rounded-2xl rounded-br-sm'
+                        : 'rounded-2xl rounded-bl-sm';
+
+                    return (
+                        <div
+                            key={i}
+                            className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}
+                        >
+                            <div className="max-w-[85%]">
+                                {!isCurrentUser && (
+                                    <p className="text-[10px] font-bold text-zen-stone mb-1 ml-1">
+                                        {m.username}
+                                    </p>
+                                )}
+                                <div className={`px-4 py-2.5 text-sm font-medium shadow-sm ${colorClass} ${roundedClass}`}>
+                                    {m.message}
+                                </div>
+                                <p className="text-[10px] text-zen-stone mt-1 ml-1">
+                                    {formatTime(m.timestamp)}
+                                </p>
+                            </div>
                         </div>
-                        <div className="text-sm text-gray-100">
-                            {m.message}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Champ d'envoi */}
-            <div className="flex items-end gap-2 border border-gray-700 rounded-2xl bg-gray-800 px-3 py-2">
-                <textarea
-                    ref={textareaRef}
-                    className="flex-1 bg-transparent outline-none text-sm placeholder-gray-400 resize-none overflow-hidden"
-                    value={input}
-                    onChange={(e) => {
-                        setInput(e.target.value);
-                        autoResize(e.target);
+            {/* Input Area */}
+            <div className="p-4 bg-white mt-auto border-t border-zen-warm-stone">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        sendMessage();
                     }}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            sendMessage();
-                        }
-                    }}
-                    placeholder="Écris ton message ... "
-                    rows={1}
-                />
-                <button
-                    onClick={sendMessage}
-                    className="bg-gray-200 hover:bg-gray-400  transition-colors text-black text-sm font-medium px-4 py-1 rounded-xl shadow-sm"
+                    className="flex gap-2 bg-zen-light-cream p-1.5 rounded-full border border-zen-warm-stone focus-within:border-zen-terracotta focus-within:ring-2 focus-within:ring-zen-terracotta/10 transition-all shadow-sm"
                 >
-                    Envoyer
-                </button>
+                    <input
+                        ref={textareaRef}
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 text-zen-charcoal placeholder-zen-stone outline-none"
+                        placeholder="Écrire un message..."
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                sendMessage();
+                            }
+                        }}
+                    />
+                    <button
+                        type="button"
+                        className="p-2 text-zen-stone hover:text-zen-terracotta rounded-full hover:bg-zen-cream transition-colors"
+                    >
+                        <Smile size={20} />
+                    </button>
+                    <button
+                        type="submit"
+                        className="p-2 bg-zen-sage text-white rounded-full hover:bg-zen-sage/80 transition-all shadow-md"
+                    >
+                        <Send size={16} className="ml-0.5" />
+                    </button>
+                </form>
             </div>
         </div>
     );
