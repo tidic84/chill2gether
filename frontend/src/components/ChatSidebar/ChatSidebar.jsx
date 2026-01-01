@@ -28,7 +28,7 @@ export default function ChatSidebar({ chat, playlist, history }) {
                             : "text-zen-stone hover:text-zen-dark-stone"
                     }`}
                 >
-                    File
+                    Playlist
                 </button>
                 <button
                     onClick={() => setActiveOverlay((prev) => (prev === "history" ? null : "history"))}
