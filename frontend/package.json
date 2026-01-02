@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "emoji-picker-react": "^4.16.1",
     "framer-motion": "^12.23.24",
     "gsap": "^3.14.1",
     "hls.js": "^1.6.15",
@@ -46,13 +47,14 @@
     "vite": "^7.1.7"
   },
   "babel": {
-    "presets": ["@babel/preset-env", "@babel/preset-react"]
+    "presets": [
+      "@babel/preset-env",
+      "@babel/preset-react"
+    ]
   },
   "jest": {
     "transform": {
       "^.+\\.(js|jsx)$": "babel-jest"
     }
   }
-
-  
 }
