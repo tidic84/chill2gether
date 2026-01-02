@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-zen-bg text-zen-text;
+    @apply bg-zen-bg dark:bg-zen-dark-bg text-zen-text dark:text-zen-dark-text;
   }
 }
 
@@ -27,6 +27,11 @@
   opacity: 0.15;
 }
 
+.dark .shape-sage {
+  background: #6B8A7A;
+  opacity: 0.08;
+}
+
 .shape-clay {
   bottom: -10%;
   left: -10%;
@@ -38,6 +43,11 @@
   opacity: 0.15;
 }
 
+.dark .shape-clay {
+  background: #D4917A;
+  opacity: 0.08;
+}
+
 /* Input Rejoindre Style */
 .join-input-container {
   background: #FFFFFF;
@@ -45,9 +55,19 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.dark .join-input-container {
+  background: #292524;
+  border-color: #44403C;
+}
+
 .join-input-container:focus-within {
   border-color: #C67D63;
   box-shadow: 0 4px 20px -2px rgba(198, 125, 99, 0.1);
+}
+
+.dark .join-input-container:focus-within {
+  border-color: #D4917A;
+  box-shadow: 0 4px 20px -2px rgba(212, 145, 122, 0.15);
 }
 
 /* Bouton Créer (Principal) */
@@ -57,10 +77,20 @@
   transition: all 0.3s ease;
 }
 
+.dark .btn-create {
+  background-color: #6B8A7A;
+  color: #FAF9F6;
+}
+
 .btn-create:hover {
   background-color: #3E4E42;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(74, 93, 79, 0.25);
+}
+
+.dark .btn-create:hover {
+  background-color: #5A7565;
+  box-shadow: 0 8px 20px rgba(107, 138, 122, 0.3);
 }
 
 .btn-create:active {
@@ -70,6 +100,10 @@
 .brand-icon:hover {
   color: #4A5D4F;
   transform: translateY(-5px);
+}
+
+.dark .brand-icon:hover {
+  color: #6B8A7A;
 }
 
 @keyframes float {

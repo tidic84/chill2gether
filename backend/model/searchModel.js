@@ -11,7 +11,6 @@ export async function searchYouTube(query, apiKey) {
     const data = await response.json();
     console.log("Données reçues de YouTube:", data);
 
-    // Tu peux filtrer ici si tu veux renvoyer uniquement certaines infos
     return data.items || [];
   } catch (error) {
     console.error("Erreur lors de la requête à YouTube:", error);

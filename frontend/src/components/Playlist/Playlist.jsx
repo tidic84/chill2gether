@@ -23,7 +23,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
         <div className="h-full overflow-y-auto px-4 pb-4">
             <div className="space-y-2">
                 {videos.length === 0 ? (
-                    <div className="text-center text-zen-stone py-8 text-sm">
+                    <div className="text-center text-zen-stone dark:text-zen-dark-stone py-8 text-sm">
                         Aucune vidéo dans la playlist
                     </div>
                 ) : (
@@ -33,8 +33,8 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                             onClick={() => handleSelectVideo(index)}
                             className={`relative flex gap-3 items-center p-2 rounded-lg transition-all group cursor-pointer ${
                                 index === currentIndex
-                                    ? "bg-zen-sage/20 shadow-sm"
-                                    : "bg-zen-sage/10 hover:shadow-sm"
+                                    ? "bg-zen-sage dark:bg-zen-dark-sage/20 shadow-sm"
+                                    : "bg-zen-sage dark:bg-zen-dark-sage/10 hover:shadow-sm"
                             }`}
                         >
                             {/* Thumbnail avec Index Badge */}
@@ -50,7 +50,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                                         <div
                                             className={`absolute top-1 left-1 w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
                                                 index === currentIndex
-                                                    ? "bg-zen-sage text-white"
+                                                    ? "bg-zen-sage dark:bg-zen-dark-sage text-white"
                                                     : "bg-black/70 text-white"
                                             }`}
                                         >
@@ -62,8 +62,8 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                                     <div
                                         className={`w-24 h-16 rounded-lg flex items-center justify-center text-xs font-bold ${
                                             index === currentIndex
-                                                ? "bg-zen-sage text-white"
-                                                : "bg-zen-warm-stone text-zen-dark-stone"
+                                                ? "bg-zen-sage dark:bg-zen-dark-sage text-white"
+                                                : "bg-zen-border text-zen-stone dark:text-zen-dark-stone"
                                         }`}
                                     >
                                         {index + 1}
@@ -75,12 +75,12 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                             <div className="flex-1 min-w-0">
                                 <p
                                     className={`text-sm font-semibold truncate ${
-                                        index === currentIndex ? "text-zen-sage" : "text-zen-medium-stone"
+                                        index === currentIndex ? "text-zen-sage dark:text-zen-dark-sage" : "text-zen-stone dark:text-zen-dark-stone"
                                     }`}
                                 >
                                     {video.title}
                                 </p>
-                                <p className="text-xs text-zen-stone">
+                                <p className="text-xs text-zen-stone dark:text-zen-dark-stone">
                                     {video.addedBy?.username ? `Ajouté par ${video.addedBy.username}` : (video.duration || "En cours")}
                                 </p>
                             </div>
@@ -88,7 +88,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                             {/* Delete Button */}
                             <button
                                 onClick={(e) => handleDeleteVideo(video.id, e)}
-                                className="opacity-0 group-hover:opacity-100 p-1 text-zen-stone hover:text-zen-terracotta rounded transition-all"
+                                className="opacity-0 group-hover:opacity-100 p-1 text-zen-stone dark:text-zen-dark-stone hover:text-zen-clay dark:hover:text-zen-dark-clay dark:text-zen-dark-clay rounded transition-all"
                             >
                                 <X size={16} />
                             </button>

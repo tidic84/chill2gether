@@ -13,7 +13,7 @@ export default function History({ videos = [], onSelectVideo }) {
         <div className="h-full overflow-y-auto px-4 pb-4">
             <div className="space-y-2">
                 {videos.length === 0 ? (
-                    <div className="text-center text-zen-stone py-8 text-sm">
+                    <div className="text-center text-zen-stone dark:text-zen-dark-stone py-8 text-sm">
                         Aucune vidéo dans l'historique
                     </div>
                 ) : (
@@ -23,8 +23,8 @@ export default function History({ videos = [], onSelectVideo }) {
                             onClick={() => handleSelect(index)}
                             className={`relative flex gap-3 items-center p-2 rounded-lg transition-all cursor-pointer ${
                                 index === currentIndex
-                                    ? "bg-zen-sage/20 shadow-sm"
-                                    : "bg-zen-sage/10 hover:shadow-sm"
+                                    ? "bg-zen-sage dark:bg-zen-dark-sage/20 shadow-sm"
+                                    : "bg-zen-sage dark:bg-zen-dark-sage/10 hover:shadow-sm"
                             }`}
                         >
                             {/* Thumbnail */}
@@ -36,8 +36,8 @@ export default function History({ videos = [], onSelectVideo }) {
                                         className="w-24 h-16 rounded-lg object-cover"
                                     />
                                 ) : (
-                                    <div className="w-24 h-16 rounded-lg bg-zen-warm-stone flex items-center justify-center">
-                                        <span className="text-xs text-zen-dark-stone">
+                                    <div className="w-24 h-16 rounded-lg bg-zen-border flex items-center justify-center">
+                                        <span className="text-xs text-zen-stone dark:text-zen-dark-stone">
                                             Pas d'image
                                         </span>
                                     </div>
@@ -48,12 +48,12 @@ export default function History({ videos = [], onSelectVideo }) {
                             <div className="flex-1 min-w-0">
                                 <p
                                     className={`text-sm font-semibold truncate ${
-                                        index === currentIndex ? "text-zen-sage" : "text-zen-medium-stone"
+                                        index === currentIndex ? "text-zen-sage dark:text-zen-dark-sage" : "text-zen-stone dark:text-zen-dark-stone"
                                     }`}
                                 >
                                     {video.title}
                                 </p>
-                                <p className="text-xs text-zen-stone">
+                                <p className="text-xs text-zen-stone dark:text-zen-dark-stone">
                                     {video.addedBy?.username ? `Ajouté par ${video.addedBy.username}` : (video.duration || "Durée inconnue")}
                                 </p>
                             </div>
