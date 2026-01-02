@@ -9,7 +9,17 @@ import { createContext, useContext, useEffect } from 'react';
     useEffect(() => {
       socket.connect();
 
-      return () => socket.disconnect();
+      // Déconnecter proprement l'utilisateur quand la page est fermée
+      const handleBeforeUnload = () => {
+        socket.disconnect();
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        socket.disconnect();
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
     }, []);
 
     return (

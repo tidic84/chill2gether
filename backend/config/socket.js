@@ -18,7 +18,10 @@ function initializeSocket(server, allowedOrigins) {
             origin: "*", // Permet toutes les origines, incluant file://
             methods: ["GET", "POST"],
             credentials: true
-        }
+        },
+        // Réduire les timeouts pour détecter les déconnexions plus rapidement
+        pingTimeout: 5000,    // Temps d'attente avant de considérer la connexion perdue
+        pingInterval: 10000   // Intervalle entre les pings
     });
 
     // Map pour stocker les timers de throttling par room
@@ -147,10 +150,14 @@ function initializeSocket(server, allowedOrigins) {
 
             debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
 
-            // Confirmer la jointure au client
+            // Confirmer la jointure au client avec les infos utilisateur
             socket.emit('room-joined', {
                 roomId: roomId,
-                timestamp: new Date()
+                timestamp: new Date(),
+                user: {
+                    userId: currentUser?.userId,
+                    username: currentUser?.username
+                }
             });
 
             // Notifier les autres membres de la room

@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
 
+// Fonction pour décoder les entités HTML
+const decodeHTMLEntities = (text) => {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+};
+
 export default function YouTubeSearch({ onSelectVideo }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -31,7 +38,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
     // Définir le callback global
     window[callbackName] = (data) => {
       if (data && data[1]) {
-        const suggestionsList = data[1].map(item => item[0]);
+        const suggestionsList = data[1].map(item => decodeHTMLEntities(item[0]));
         setSuggestions(suggestionsList);
         setShowSuggestions(true);
         setVisible(false);
@@ -128,7 +135,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
   const handleSelect = (item) => {
     const video = {
       url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-      title: item.snippet.title,
+      title: decodeHTMLEntities(item.snippet.title),
       thumbnail: item.snippet.thumbnails.medium.url
     };
     onSelectVideo(video);
@@ -227,10 +234,10 @@ export default function YouTubeSearch({ onSelectVideo }) {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-zen-charcoal text-sm line-clamp-2">
-                      {item.snippet.title}
+                      {decodeHTMLEntities(item.snippet.title)}
                     </p>
                     <p className="text-xs text-zen-stone mt-1">
-                      {item.snippet.channelTitle}
+                      {decodeHTMLEntities(item.snippet.channelTitle)}
                     </p>
                   </div>
                 </div>

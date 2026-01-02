@@ -81,6 +81,25 @@ export default function RoomPage() {
         };
     }, [socket]);
 
+    // Écouter l'événement room-joined pour vérifier le pseudo
+    useEffect(() => {
+        const handleRoomJoined = (data) => {
+            if (data.user && data.user.username) {
+                setCurrentUsername(data.user.username);
+
+                if (data.user.username.startsWith("User")) {
+                    setShowUsernamePopup(true);
+                }
+            }
+        };
+
+        socket.on('room-joined', handleRoomJoined);
+
+        return () => {
+            socket.off('room-joined', handleRoomJoined);
+        };
+    }, [socket]);
+
     // Écouter la confirmation de changement de username
     useEffect(() => {
         const handleUsernameUpdated = (data) => {
