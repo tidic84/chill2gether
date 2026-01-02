@@ -18,7 +18,10 @@ function initializeSocket(server, allowedOrigins) {
             origin: "*", // Permet toutes les origines, incluant file://
             methods: ["GET", "POST"],
             credentials: true
-        }
+        },
+        // Réduire les timeouts pour détecter les déconnexions plus rapidement
+        pingTimeout: 5000,    // Temps d'attente avant de considérer la connexion perdue
+        pingInterval: 10000   // Intervalle entre les pings
     });
 
     // Map pour stocker les timers de throttling par room

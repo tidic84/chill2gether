@@ -240,7 +240,8 @@ class AnonymousUserStore {
     getUsersInRoom(roomId) {
         const usersInRoom = [];
         for (const user of this.users.values()) {
-            if (user.currentRoomId === roomId) {
+            // Exclure les utilisateurs déconnectés
+            if (user.currentRoomId === roomId && !user.disconnectedAt) {
                 usersInRoom.push({
                     userId: user.userId,
                     username: user.username,
