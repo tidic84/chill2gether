@@ -24,7 +24,7 @@ export default function Chat() {
 
     // Auto-scroll vers le bas quand de nouveaux messages arrivent
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     };
 
     useEffect(() => {

@@ -147,10 +147,14 @@ function initializeSocket(server, allowedOrigins) {
 
             debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
 
-            // Confirmer la jointure au client
+            // Confirmer la jointure au client avec les infos utilisateur
             socket.emit('room-joined', {
                 roomId: roomId,
-                timestamp: new Date()
+                timestamp: new Date(),
+                user: {
+                    userId: currentUser?.userId,
+                    username: currentUser?.username
+                }
             });
 
             // Notifier les autres membres de la room
