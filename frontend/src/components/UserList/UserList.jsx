@@ -4,10 +4,10 @@ export default function UserList({ users = [] }) {
     // Palette de couleurs pour les avatars
     const avatarColors = [
         'bg-zen-sage text-white',
-        'bg-zen-terracotta text-white',
+        'bg-zen-clay text-white',
         'bg-zen-stone text-white',
-        'bg-zen-warm-beige text-zen-charcoal',
-        'bg-zen-dark-stone text-white',
+        'bg-zen-clay text-zen-text',
+        'bg-zen-stone text-white',
     ];
 
     const getAvatarColor = (index) => {
@@ -24,7 +24,7 @@ export default function UserList({ users = [] }) {
                 users.map((user, index) => (
                     <div
                         key={user.userId}
-                        className="flex flex-col items-center justify-center p-4 rounded-xl border border-zen-warm-stone bg-white hover:border-zen-terracotta/50 hover:shadow-md transition-all cursor-default group"
+                        className="flex flex-col items-center justify-center p-4 rounded-xl border border-zen-border bg-white hover:border-zen-clay/50 hover:shadow-md transition-all cursor-default group"
                     >
                         {/* Avatar */}
                         <div className={`w-12 h-12 rounded-full ${getAvatarColor(index)} flex items-center justify-center text-sm font-bold mb-2 shadow-sm`}>
@@ -32,7 +32,7 @@ export default function UserList({ users = [] }) {
                         </div>
 
                         {/* Username */}
-                        <span className="text-sm font-semibold text-zen-charcoal truncate max-w-full">
+                        <span className="text-sm font-semibold text-zen-text truncate max-w-full">
                             {user.username}
                         </span>
 
@@ -45,8 +45,8 @@ export default function UserList({ users = [] }) {
             )}
 
             {/* Invite Button */}
-            <button className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-zen-light-stone text-zen-stone hover:text-zen-terracotta hover:border-zen-terracotta hover:bg-white transition-all text-sm gap-2">
-                <div className="w-10 h-10 rounded-full bg-zen-cream flex items-center justify-center">
+            <button className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-zen-border text-zen-stone hover:text-zen-clay hover:border-zen-clay hover:bg-white transition-all text-sm gap-2">
+                <div className="w-10 h-10 rounded-full bg-zen-surface flex items-center justify-center">
                     <Plus size={20} />
                 </div>
                 <span className="font-medium">Inviter</span>
