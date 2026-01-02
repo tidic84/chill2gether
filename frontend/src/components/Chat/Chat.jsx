@@ -2,13 +2,16 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Send, Smile } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
 import socket from "../../services/socket";
 
 export default function Chat() {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const textareaRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const emojiPickerRef = useRef(null);
     const { roomId } = useParams();
 
     function autoResize(textarea) {
@@ -30,6 +33,23 @@ export default function Chat() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+                setShowEmojiPicker(false);
+            }
+        };
+
+        if (showEmojiPicker) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [showEmojiPicker]);
 
     // Écoute les nouveaux messages
     useEffect(() => {
@@ -61,6 +81,12 @@ export default function Chat() {
     const formatTime = (timestamp) => {
         const date = new Date(timestamp);
         return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // Handle emoji selection
+    const handleEmojiClick = (emojiData) => {
+        setInput((prev) => prev + emojiData.emoji);
+        setShowEmojiPicker(false);
     };
 
     return (
@@ -112,7 +138,21 @@ export default function Chat() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white mt-auto border-t border-zen-border">
+            <div className="p-4 bg-white mt-auto border-t border-zen-border relative">
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                    <div
+                        ref={emojiPickerRef}
+                        className="absolute bottom-full right-4 mb-2 z-50"
+                    >
+                        <EmojiPicker
+                            onEmojiClick={handleEmojiClick}
+                            width={320}
+                            height={400}
+                        />
+                    </div>
+                )}
+
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
@@ -136,7 +176,12 @@ export default function Chat() {
                     />
                     <button
                         type="button"
-                        className="p-2 text-zen-stone hover:text-zen-clay rounded-full hover:bg-zen-bg transition-colors"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className={`p-2 rounded-full transition-colors ${
+                            showEmojiPicker
+                                ? 'text-zen-terracotta bg-zen-cream'
+                                : 'text-zen-stone hover:text-zen-terracotta hover:bg-zen-cream'
+                        }`}
                     >
                         <Smile size={20} />
                     </button>
