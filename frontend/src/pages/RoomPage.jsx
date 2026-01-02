@@ -327,21 +327,21 @@ export default function RoomPage() {
     // Room non trouvée (404)
     if (roomState === 'not-found') {
         return (
-            <div className="relative min-h-screen overflow-hidden">
+            <div className="relative min-h-screen overflow-hidden bg-zen-bg">
                 <GridMotion className="absolute inset-0 -z-20" />
 
-                <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white">
-                    <div className="absolute inset-0 z-0 bg-black/40 pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-center min-h-screen">
+                    <div className="absolute inset-0 z-0 bg-zen-stone/10 pointer-events-none" />
 
-                    <div className="relative z-10 text-center p-8 bg-black/60 backdrop-blur-md rounded-xl shadow-lg max-w-md">
-                        <h1 className="text-6xl font-bold mb-4">404</h1>
-                        <h2 className="text-2xl font-semibold mb-2">Room introuvable</h2>
-                        <p className="text-gray-300 mb-6">
-                            La room <span className="font-mono text-blue-400">{roomId}</span> n'existe pas ou a été supprimée.
+                    <div className="relative z-10 text-center p-8 bg-zen-surface backdrop-blur-md rounded-2xl shadow-xl border border-zen-border max-w-md">
+                        <h1 className="text-6xl font-bold mb-4 text-zen-clay">404</h1>
+                        <h2 className="text-2xl font-semibold mb-2 text-zen-text">Room introuvable</h2>
+                        <p className="text-zen-muted mb-6">
+                            La room <span className="font-mono text-zen-sage font-semibold">{roomId}</span> n'existe pas ou a été supprimée.
                         </p>
                         <Link
                             to="/"
-                            className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
+                            className="inline-block px-6 py-3 bg-zen-sage hover:bg-zen-sage/80 text-white rounded-lg font-semibold transition shadow-md"
                         >
                             Retour à l'accueil
                         </Link>
@@ -354,27 +354,27 @@ export default function RoomPage() {
     // Demande de mot de passe
     if (roomState === 'password-required') {
         return (
-            <div className="relative min-h-screen overflow-hidden">
+            <div className="relative min-h-screen overflow-hidden bg-zen-bg">
                 <GridMotion className="absolute inset-0 -z-20" />
 
-                <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white">
-                    <div className="absolute inset-0 z-0 bg-black/40 pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-center min-h-screen">
+                    <div className="absolute inset-0 z-0 bg-zen-stone/10 pointer-events-none" />
 
-                    <div className="relative z-10 w-full max-w-md p-8 bg-black/60 backdrop-blur-md rounded-xl shadow-lg">
+                    <div className="relative z-10 w-full max-w-md p-8 bg-zen-surface backdrop-blur-md rounded-2xl shadow-xl border border-zen-border">
                         <div className="text-center mb-6">
                             <div className="text-5xl mb-4">🔒</div>
-                            <h1 className="text-3xl font-bold mb-2">Room Privée</h1>
-                            <p className="text-gray-300">
+                            <h1 className="text-3xl font-bold mb-2 text-zen-text">Room Privée</h1>
+                            <p className="text-zen-muted">
                                 Cette room nécessite un mot de passe
                             </p>
-                            <p className="text-sm text-gray-400 mt-2 font-mono">
+                            <p className="text-sm text-zen-stone mt-2 font-mono">
                                 Room: {roomId}
                             </p>
                         </div>
 
                         <form onSubmit={handlePasswordSubmit} className="space-y-4">
                             <div>
-                                <label htmlFor="password" className="block text-sm font-medium mb-2">
+                                <label htmlFor="password" className="block text-sm font-medium mb-2 text-zen-text">
                                     Mot de passe
                                 </label>
                                 <input
@@ -382,14 +382,14 @@ export default function RoomPage() {
                                     id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 bg-white border border-zen-border rounded-lg text-zen-text placeholder-zen-stone focus:outline-none focus:border-zen-sage focus:ring-2 focus:ring-zen-sage/20"
                                     placeholder="Entrez le mot de passe"
                                     required
                                 />
                             </div>
 
                             {passwordError && (
-                                <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-200 text-sm">
+                                <div className="p-3 bg-zen-clay/10 border border-zen-clay rounded-lg text-zen-clay text-sm">
                                     {passwordError}
                                 </div>
                             )}
@@ -397,13 +397,13 @@ export default function RoomPage() {
                             <div className="flex gap-4">
                                 <Link
                                     to="/"
-                                    className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg font-semibold transition text-center"
+                                    className="flex-1 px-4 py-2 bg-zen-bg hover:bg-zen-border text-zen-text rounded-lg font-semibold transition text-center"
                                 >
                                     Annuler
                                 </Link>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
+                                    className="flex-1 px-4 py-2 bg-zen-sage hover:bg-zen-sage/80 text-white rounded-lg font-semibold transition shadow-md"
                                 >
                                     Rejoindre
                                 </button>
@@ -446,22 +446,22 @@ export default function RoomPage() {
 
                 {/* Popup de changement de pseudo */}
                 {showUsernamePopup && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zen-stone/60 backdrop-blur-sm">
+                        <div className="bg-zen-surface rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-zen-border">
                             <div className="text-center mb-6">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                <h2 className="text-2xl font-bold text-zen-text mb-2">
                                     Personnalisez votre pseudo
                                 </h2>
-                                <p className="text-gray-600">
-                                    Votre pseudo actuel est <span className="font-mono font-semibold text-blue-600">{currentUsername}</span>
+                                <p className="text-zen-muted">
+                                    Votre pseudo actuel est <span className="font-mono font-semibold text-zen-sage">{currentUsername}</span>
                                 </p>
-                                <p className="text-sm text-gray-500 mt-2">
+                                <p className="text-sm text-zen-stone mt-2">
                                     Voulez-vous le modifier maintenant ?
                                 </p>
                             </div>
 
                             <div className="mb-6">
-                                <label htmlFor="newUsername" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="newUsername" className="block text-sm font-medium text-zen-text mb-2">
                                     Nouveau pseudo
                                 </label>
                                 <input
@@ -470,7 +470,7 @@ export default function RoomPage() {
                                     value={newUsername}
                                     onChange={(e) => setNewUsername(e.target.value)}
                                     placeholder="Entrez votre nouveau pseudo"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-4 py-3 bg-white border border-zen-border rounded-lg focus:outline-none focus:ring-2 focus:ring-zen-sage focus:border-zen-sage text-zen-text"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             handleUsernameChange();
@@ -482,13 +482,13 @@ export default function RoomPage() {
                             <div className="flex gap-3">
                                 <button
                                     onClick={handleCancelUsernameChange}
-                                    className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold transition"
+                                    className="flex-1 px-4 py-3 bg-zen-bg hover:bg-zen-border text-zen-text rounded-lg font-semibold transition"
                                 >
                                     Annuler
                                 </button>
                                 <button
                                     onClick={handleUsernameChange}
-                                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+                                    className="flex-1 px-4 py-3 bg-zen-sage hover:bg-zen-sage/80 text-white rounded-lg font-semibold transition shadow-md"
                                 >
                                     Modifier
                                 </button>

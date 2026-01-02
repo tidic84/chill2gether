@@ -36,8 +36,8 @@ export default function History({ videos = [], onSelectVideo }) {
                                         className="w-24 h-16 rounded-lg object-cover"
                                     />
                                 ) : (
-                                    <div className="w-24 h-16 rounded-lg bg-zen-warm-stone flex items-center justify-center">
-                                        <span className="text-xs text-zen-dark-stone">
+                                    <div className="w-24 h-16 rounded-lg bg-zen-border flex items-center justify-center">
+                                        <span className="text-xs text-zen-stone">
                                             Pas d'image
                                         </span>
                                     </div>
@@ -48,7 +48,7 @@ export default function History({ videos = [], onSelectVideo }) {
                             <div className="flex-1 min-w-0">
                                 <p
                                     className={`text-sm font-semibold truncate ${
-                                        index === currentIndex ? "text-zen-sage" : "text-zen-medium-stone"
+                                        index === currentIndex ? "text-zen-sage" : "text-zen-stone"
                                     }`}
                                 >
                                     {video.title}

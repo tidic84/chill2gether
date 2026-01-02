@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+    darkMode: 'class',
     content: [
         "./index.html",
         "./src/**/*.{js,jsx,ts,tsx}",
@@ -11,6 +12,7 @@ export default {
             },
             colors: {
                 zen: {
+                    // Light mode
                     bg: '#F2F0E9',        // Fond Crème
                     surface: '#FAF9F6',   // Surface très claire
                     card: '#FFFFFF',      // Blanc pur
@@ -20,6 +22,17 @@ export default {
                     sage: '#4A5D4F',      // Vert Sauge (Primaire)
                     clay: '#C67D63',      // Terracotta (Secondaire)
                     stone: '#78716C',     // Gris Pierre
+
+                    // Dark mode
+                    'dark-bg': '#1C1917',        // Fond Sombre
+                    'dark-surface': '#292524',   // Surface sombre
+                    'dark-card': '#1C1917',      // Card sombre
+                    'dark-border': '#44403C',    // Bordures sombres
+                    'dark-text': '#FAF9F6',      // Texte clair
+                    'dark-muted': '#A8A29E',     // Texte gris
+                    'dark-sage': '#6B8A7A',      // Vert Sauge clair
+                    'dark-clay': '#D4917A',      // Terracotta clair
+                    'dark-stone': '#A8A29E',     // Gris Pierre
                 },
             },
             keyframes: {

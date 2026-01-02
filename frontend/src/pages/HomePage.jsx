@@ -5,6 +5,7 @@ import SpotlightCard from "../components/SpotlightCard/SpotlightCard";
 import Stepper, { Step } from "../components/Stepper/Stepper";
 import GridMotion from "../components/GridMotion/GridMotion";
 import { useSocket } from "../contexts/SocketContext";
+import { roomApi } from "../services/api";
 
 export default function HomePage() {
     const [showTutorial, setShowTutorial] = useState(false);
@@ -13,6 +14,7 @@ export default function HomePage() {
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [error, setError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
     const inputRef = useRef(null);
     const navigate = useNavigate();
     const socket = useSocket();
@@ -41,20 +43,43 @@ export default function HomePage() {
         }, 1000);
     };
 
-    const handleJoinRoom = () => {
+    const handleJoinRoom = async () => {
         const code = joinCode.trim();
 
         if (code === "") {
             setError(true);
-            setTimeout(() => setError(false), 500);
-            inputRef.current?.focus();
-        } else {
-            setIsJoining(true);
+            setErrorMessage("Veuillez entrer un code de room");
             setTimeout(() => {
-                // Navigation vers la room avec le code
+                setError(false);
+                setErrorMessage("");
+            }, 3000);
+            inputRef.current?.focus();
+            return;
+        }
+
+        setIsJoining(true);
+        setError(false);
+        setErrorMessage("");
+
+        try {
+            // Vérifier si la room existe
+            await roomApi.getRoom(code);
+
+            // Si la room existe, naviguer vers elle
+            setTimeout(() => {
                 navigate(`/room/${code}`);
                 setIsJoining(false);
             }, 800);
+        } catch (err) {
+            // Si la room n'existe pas
+            setError(true);
+            setErrorMessage("Cette room n'existe pas");
+            setIsJoining(false);
+            setTimeout(() => {
+                setError(false);
+                setErrorMessage("");
+            }, 3000);
+            inputRef.current?.focus();
         }
     };
 
@@ -162,34 +187,41 @@ export default function HomePage() {
                         </div>
 
                         {/* 2. INPUT REJOINDRE */}
-                        <div
-                            className={`join-input-container relative flex p-1.5 rounded-2xl w-full ${
-                                error ? "ring-2 ring-red-300 animate-pulse" : ""
-                            }`}
-                        >
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                className="flex-grow bg-transparent text-zen-text px-4 py-2 outline-none font-medium text-base placeholder:text-zen-muted/70 text-center"
-                                placeholder="Entrer un code..."
-                                value={joinCode}
-                                onChange={handleInputChange}
-                                onKeyPress={handleKeyPress}
-                                maxLength={10}
-                                autoComplete="off"
-                            />
-                            <button
-                                onClick={handleJoinRoom}
-                                disabled={isJoining}
-                                className="px-5 py-2 rounded-xl bg-zen-surface hover:bg-zen-bg border border-transparent hover:border-zen-clay/30 text-zen-stone font-bold hover:text-zen-clay transition-all group"
-                                title="Rejoindre"
+                        <div className="space-y-2">
+                            <div
+                                className={`join-input-container relative flex p-1.5 rounded-2xl w-full ${
+                                    error ? "ring-2 ring-zen-clay animate-pulse" : ""
+                                }`}
                             >
-                                {isJoining ? (
-                                    <i className="fa-solid fa-circle-notch fa-spin"></i>
-                                ) : (
-                                    <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                                )}
-                            </button>
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    className="flex-grow bg-transparent text-zen-text px-4 py-2 outline-none font-medium text-base placeholder:text-zen-muted/70 text-center"
+                                    placeholder="Entrer un code..."
+                                    value={joinCode}
+                                    onChange={handleInputChange}
+                                    onKeyPress={handleKeyPress}
+                                    maxLength={10}
+                                    autoComplete="off"
+                                />
+                                <button
+                                    onClick={handleJoinRoom}
+                                    disabled={isJoining}
+                                    className="px-5 py-2 rounded-xl bg-zen-surface hover:bg-zen-bg border border-transparent hover:border-zen-clay/30 text-zen-stone font-bold hover:text-zen-clay transition-all group"
+                                    title="Rejoindre"
+                                >
+                                    {isJoining ? (
+                                        <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                    ) : (
+                                        <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                    )}
+                                </button>
+                            </div>
+                            {errorMessage && (
+                                <p className="text-sm text-zen-clay font-medium text-center animate-pulse">
+                                    {errorMessage}
+                                </p>
+                            )}
                         </div>
                     </div>
 

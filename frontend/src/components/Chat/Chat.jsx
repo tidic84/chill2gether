@@ -66,11 +66,11 @@ export default function Chat() {
     return (
         <div className="flex flex-col h-full bg-white relative">
             {/* Chat Header */}
-            <div className="p-3 flex justify-between items-center border-b border-zen-warm-stone">
+            <div className="p-3 flex justify-between items-center border-b border-zen-border">
                 <span className="text-xs font-bold text-zen-stone uppercase tracking-widest px-2">
                     Live Chat
                 </span>
-                <span className="text-xs bg-zen-cream text-zen-dark-stone px-2 py-0.5 rounded text-[10px] font-bold border border-zen-warm-stone">
+                <span className="text-xs bg-zen-bg text-zen-stone px-2 py-0.5 rounded text-[10px] font-bold border border-zen-border">
                     EN LIGNE
                 </span>
             </div>
@@ -82,7 +82,7 @@ export default function Chat() {
                     const isCurrentUser = false; // TODO: compare with actual current user
                     const colorClass = isCurrentUser
                         ? 'bg-zen-sage text-white'
-                        : 'bg-zen-cream text-zen-charcoal border border-zen-warm-stone';
+                        : 'bg-zen-bg text-zen-text border border-zen-border';
                     const roundedClass = isCurrentUser
                         ? 'rounded-2xl rounded-br-sm'
                         : 'rounded-2xl rounded-bl-sm';
@@ -112,20 +112,20 @@ export default function Chat() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white mt-auto border-t border-zen-warm-stone">
+            <div className="p-4 bg-white mt-auto border-t border-zen-border">
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
                         sendMessage();
                     }}
-                    className="flex gap-2 bg-zen-light-cream p-1.5 rounded-full border border-zen-warm-stone focus-within:border-zen-terracotta focus-within:ring-2 focus-within:ring-zen-terracotta/10 transition-all shadow-sm"
+                    className="flex gap-2 bg-zen-surface p-1.5 rounded-full border border-zen-border focus-within:border-zen-clay focus-within:ring-2 focus-within:ring-zen-clay/10 transition-all shadow-sm"
                 >
                     <input
                         ref={textareaRef}
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 text-zen-charcoal placeholder-zen-stone outline-none"
+                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 text-zen-text placeholder-zen-stone outline-none"
                         placeholder="Écrire un message..."
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
@@ -136,7 +136,7 @@ export default function Chat() {
                     />
                     <button
                         type="button"
-                        className="p-2 text-zen-stone hover:text-zen-terracotta rounded-full hover:bg-zen-cream transition-colors"
+                        className="p-2 text-zen-stone hover:text-zen-clay rounded-full hover:bg-zen-bg transition-colors"
                     >
                         <Smile size={20} />
                     </button>
