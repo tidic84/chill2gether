@@ -22,33 +22,31 @@ export function SocketProvider({ children }) {
       }
     };
 
-    // Mettre à jour les permissions si elles changent globalement dans la room
-    const handleRoomPermissionsUpdated = (data) => {
-      console.log('Room permissions updated:', data);
-      setUserPermissions(prev => ({
-        ...prev,
-        ...data.defaultPermissions
-      }));
-    };
-
-    // Mettre à jour les permissions si ce sont celles de l'utilisateur courant
+    // ✅ IMPORTANT: Quand les permissions PERSONNELLES changent, mettre à jour
     const handleUserPermissionsUpdated = (data) => {
       console.log('User permissions updated:', data);
-      // Si c'est l'utilisateur courant, mettre à jour
+      // Vérifier si c'est l'utilisateur courant
       const currentUserId = localStorage.getItem('anonymousUserId');
       if (data.userId === currentUserId) {
+        console.log('Mes permissions ont changé:', data.permissions);
         setUserPermissions(data.permissions);
       }
     };
 
+    // ✅ Les permissions par défaut de la room NE changent PAS les permissions personnelles
+    const handleRoomDefaultPermissionsUpdated = (data) => {
+      console.log('Room default permissions updated:', data);
+      // Ne rien faire - les permissions par défaut ne s'appliquent qu'aux nouveaux utilisateurs
+    };
+
     socket.on('room-joined', handleRoomJoined);
-    socket.on('room-permissions-updated', handleRoomPermissionsUpdated);
     socket.on('user-permissions-updated', handleUserPermissionsUpdated);
+    socket.on('room-default-permissions-updated', handleRoomDefaultPermissionsUpdated);
 
     return () => {
       socket.off('room-joined', handleRoomJoined);
-      socket.off('room-permissions-updated', handleRoomPermissionsUpdated);
       socket.off('user-permissions-updated', handleUserPermissionsUpdated);
+      socket.off('room-default-permissions-updated', handleRoomDefaultPermissionsUpdated);
     };
   }, []);
 

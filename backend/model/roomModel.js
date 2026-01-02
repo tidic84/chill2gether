@@ -76,15 +76,23 @@ async function getRoomById(roomId, includePassword = false) {
 
 async function updateDefaultPermissions(roomId, permissions) {
     const result = await query(
-        'UPDATE room SET default_permissions = $2 WHERE id = $1 RETURNING default_permissions',
-        [roomId, JSON.stringify(permissions)]
+        `UPDATE room 
+         SET default_permissions = $1 
+         WHERE id = $2 
+         RETURNING id, owner_id, default_permissions`,
+        [JSON.stringify(permissions), roomId]
     );
 
     if (result.rows.length === 0) {
         throw new Error('Room not found');
     }
 
-    return result.rows[0].default_permissions;
+    const room = result.rows[0];
+    return {
+        id: room.id,
+        creatorId: room.owner_id,
+        defaultPermissions: room.default_permissions
+    };
 }
 
 async function roomExists(roomId) {

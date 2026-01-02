@@ -4,7 +4,6 @@ const permissionsService = require('../../services/permissionsService');
 const { debugLog } = require('../../utils/utils');
 const userPermissionsStore = require('../../services/userPermissionsStore');
 
-
 /**
  * Initialise les handlers WebSocket pour la gestion des permissions
  * @param {object} io - Instance Socket.IO
@@ -12,37 +11,9 @@ const userPermissionsStore = require('../../services/userPermissionsStore');
  */
 function initializePermissionsHandlers(io, socket) {
     /**
-     * GET-ROOM-PERMISSIONS
-     * Récupère les permissions par défaut d'une room
-     */
-    socket.on('get-room-permissions', async (roomId) => {
-        try {
-            if (!roomId) {
-                socket.emit('permissions-error', { error: 'Room ID is required' });
-                return;
-            }
-
-            const room = await roomModel.getRoomById(roomId);
-            if (!room) {
-                socket.emit('permissions-error', { error: 'Room not found' });
-                return;
-            }
-
-            const user = anonymousUserStore.getUserBySocketId(socket.id);
-            socket.emit('room-permissions', {
-                roomId,
-                defaultPermissions: room.defaultPermissions,
-                isAdmin: room.creatorId === user?.userId
-            });
-        } catch (error) {
-            debugLog(`Erreur lors de la récupération des permissions: ${error}`);
-            socket.emit('permissions-error', { error: 'Error fetching permissions' });
-        }
-    });
-
-    /**
      * UPDATE-ROOM-PERMISSIONS
      * Met à jour les permissions par défaut d'une room (admin uniquement)
+     * ⚠️ N'affecte QUE les nouveaux utilisateurs, pas ceux déjà connectés
      */
     socket.on('update-room-permissions', async (data) => {
         try {
@@ -54,20 +25,30 @@ function initializePermissionsHandlers(io, socket) {
                 return;
             }
 
-            const updatedPermissions = await permissionsService.updateRoomPermissions(roomId, user.userId, permissions);
+            // ✅ Vérifier que l'utilisateur est admin de la room
+            const room = await roomModel.getRoomById(roomId);
+            if (!room || room.creatorId !== user?.userId) {
+                socket.emit('permissions-error', { error: 'Only room admin can update default permissions' });
+                return;
+            }
+
+            // ✅ Mettre à jour UNIQUEMENT les permissions par défaut de la room en base de données
+            const updatedRoom = await roomModel.updateDefaultPermissions(roomId, permissions);
+
+            debugLog(`Permissions par défaut de la room ${roomId} mises à jour par ${user?.username}`);
 
             // Broadcast les permissions mises à jour à tous les utilisateurs de la room
-            io.to(roomId).emit('room-permissions-updated', {
+            io.to(roomId).emit('room-default-permissions-updated', {
                 roomId,
-                defaultPermissions: updatedPermissions,
+                defaultPermissions: updatedRoom.defaultPermissions,
                 updatedBy: user.username
             });
 
-            socket.emit('update-permissions-success', {
-                message: 'Permissions updated successfully'
+            socket.emit('update-room-permissions-success', {
+                message: 'Room permissions updated successfully'
             });
         } catch (error) {
-            debugLog(`Erreur lors de la mise à jour des permissions: ${error}`);
+            debugLog(`Erreur lors de la mise à jour des permissions de room: ${error}`);
             socket.emit('permissions-error', { error: error.message });
         }
     });
@@ -75,7 +56,7 @@ function initializePermissionsHandlers(io, socket) {
     /**
      * UPDATE-USER-PERMISSIONS
      * Met à jour les permissions d'un utilisateur spécifique
-     * Vérifie que l'utilisateur qui modifie a la permission editPermissions
+     * Sauvegarde en mémoire ET applique immédiatement
      */
     socket.on('update-user-permissions', async (data) => {
         try {
@@ -110,17 +91,15 @@ function initializePermissionsHandlers(io, socket) {
                 }
             }
 
-            // Mettre à jour les permissions de l'utilisateur
+            // ✅ Mettre à jour les permissions de l'utilisateur
             anonymousUserStore.updateUserPermissions(targetUserId, validatedPermissions);
 
-            // 🔑 IMPORTANT: Sauvegarder les permissions dans le store persistant
+            // ✅ Sauvegarder les permissions personnalisées
             userPermissionsStore.setUserPermissions(roomId, targetUserId, validatedPermissions);
 
-
             debugLog(`Permissions de ${targetUser.username} mises à jour par ${modifierUser.username}`);
-            debugLog(`Permissions sauvegardées pour room ${roomId}, user ${targetUserId}`);
 
-            // Broadcast la mise à jour à tous les utilisateurs de la room
+            // ✅ Envoyer IMMÉDIATEMENT au client concerné ses nouvelles permissions
             io.to(roomId).emit('user-permissions-updated', {
                 userId: targetUserId,
                 username: targetUser.username,
@@ -134,6 +113,35 @@ function initializePermissionsHandlers(io, socket) {
         } catch (error) {
             debugLog(`Erreur lors de la mise à jour des permissions utilisateur: ${error}`);
             socket.emit('permissions-error', { error: error.message });
+        }
+    });
+
+    /**
+     * GET-ROOM-PERMISSIONS
+     * Récupère les permissions par défaut d'une room
+     */
+    socket.on('get-room-permissions', async (roomId) => {
+        try {
+            if (!roomId) {
+                socket.emit('permissions-error', { error: 'Room ID is required' });
+                return;
+            }
+
+            const room = await roomModel.getRoomById(roomId);
+            if (!room) {
+                socket.emit('permissions-error', { error: 'Room not found' });
+                return;
+            }
+
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
+            socket.emit('room-permissions', {
+                roomId,
+                defaultPermissions: room.defaultPermissions,
+                isAdmin: room.creatorId === user?.userId
+            });
+        } catch (error) {
+            debugLog(`Erreur lors de la récupération des permissions: ${error}`);
+            socket.emit('permissions-error', { error: 'Error fetching permissions' });
         }
     });
 

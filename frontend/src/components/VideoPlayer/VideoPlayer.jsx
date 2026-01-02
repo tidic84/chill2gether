@@ -118,6 +118,8 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                             }
                         },
                         onStateChange: (event) => {
+                            console.log("onStateChange:", event.data, "isLocalActionRef:", isLocalActionRef.current, "canInteractVideo:", canInteractVideo);
+
                             // Vidéo terminée
                             if (event.data === 0) {
                                 console.log("Vidéo terminée");
@@ -126,26 +128,37 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                                 }
                             }
 
-                            // Bloquer les actions locales si pas de permission
-                            if (!canInteractVideo) {
-                                console.log("Interaction bloquée - pas de permission");
-                                return;
-                            }
+                            // ✅ NE PAS bloquer ici - laisser les autres commandes passer
+                            // Les utilisateurs sans permission ne peuvent pas ENVOYER de commandes (bloqué par isLocalActionRef)
 
-                            //Ignorer le premier play automatique
+                            // Ignorer le premier play automatique
                             if (!isLocalActionRef.current) {
-                                if (event.data === 1) {
+                                if (event.data === 1) { // PLAY
                                     if (ignoreNextPlayRef.current) {
                                         console.log("Premier play ignoré (chargement initial)");
                                         ignoreNextPlayRef.current = false;
                                         return;
                                     }
 
+                                    // ✅ Vérifier la permission AVANT d'envoyer
+                                    if (!canInteractVideo) {
+                                        console.log("Play local refusé - pas de permission");
+                                        return;
+                                    }
+
+                                    console.log("Envoi video-play");
                                     socket.emit("video-play", {
                                         roomId,
                                         time: event.target.getCurrentTime()
                                     });
-                                } else if (event.data === 2) {
+                                } else if (event.data === 2) { // PAUSE
+                                    // ✅ Vérifier la permission AVANT d'envoyer
+                                    if (!canInteractVideo) {
+                                        console.log("Pause locale refusée - pas de permission");
+                                        return;
+                                    }
+
+                                    console.log("Envoi video-pause");
                                     socket.emit("video-pause", {
                                         roomId,
                                         time: event.target.getCurrentTime()
@@ -198,12 +211,6 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
         const handleSyncResponse = (data) => {
             console.log("Réponse de sync reçue:", data);
-
-            // Ne pas synchroniser si déjà fait
-            if (hasSyncedRef.current) {
-                console.log("Déjà synchronisé, ignorer");
-                return;
-            }
 
             // Synchroniser seulement si une vidéo est en cours de lecture
             if (playerRef.current && playerReadyRef.current && data.hasVideo && data.isPlaying) {
@@ -278,13 +285,9 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
     useEffect(() => {
         if (!socket) return;
 
-        // Bloquer les sync si pas de permission
-        if (!canInteractVideo) {
-            console.log("Interactions vidéo bloquées");
-            return;
-        }
-
         const handlePlaySync = ({ time }) => {
+            console.log("handlePlaySync appelé, canInteractVideo:", canInteractVideo, "time:", time);
+
             if (playerRef.current && playerRef.current.playVideo) {
                 console.log("Sync play reçu:", time);
                 isLocalActionRef.current = true;
@@ -297,6 +300,8 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         };
 
         const handlePauseSync = ({ time }) => {
+            console.log("handlePauseSync appelé, canInteractVideo:", canInteractVideo, "time:", time);
+
             if (playerRef.current && playerRef.current.pauseVideo) {
                 console.log("Sync pause reçu:", time);
                 isLocalActionRef.current = true;
@@ -309,6 +314,8 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         };
 
         const handleSeekSync = ({ time }) => {
+            console.log("handleSeekSync appelé, canInteractVideo:", canInteractVideo, "time:", time);
+
             if (playerRef.current && playerRef.current.seekTo) {
                 console.log("Sync seek reçu:", time);
                 isLocalActionRef.current = true;
@@ -319,6 +326,8 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
             }
         };
 
+        // ✅ TOUJOURS écouter les syncs, peu importe la permission
+        // Les syncs reçus sont des ordres d'autres utilisateurs, pas des actions locales
         socket.on("video-play-sync", handlePlaySync);
         socket.on("video-pause-sync", handlePauseSync);
         socket.on("video-seek-sync", handleSeekSync);
@@ -328,7 +337,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
             socket.off("video-pause-sync", handlePauseSync);
             socket.off("video-seek-sync", handleSeekSync);
         };
-    }, [socket, canInteractVideo]);
+    }, [socket]); // ✅ RETIRER canInteractVideo des dépendances
 
     return (
         <div className="w-full h-full bg-black relative">

@@ -140,51 +140,73 @@ function initializeSocket(server, allowedOrigins) {
         });
 
         // Rejoindre une room spécifique
-        socket.on('join-room', async (roomId) => {
+        socket.on("join-room", async (roomId) => {
             anonymousUserStore.updateActivity(socket.id);
             const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
 
             socket.join(roomId);
-
-            // Stocker la room actuelle dans le socket pour la gérer lors de la déconnexion
             socket.currentRoomId = roomId;
-
             anonymousUserStore.setUserRoom(currentUser.userId, roomId);
 
-            // Récupérer les permissions par défaut de la room
-            let room = null;
+            let room; // ✅ Déclarer room avant le try/catch
+
             try {
+                // ✅ Récupérer la room avec les permissions par défaut MISES À JOUR
                 room = await roomModel.getRoomById(roomId, false);
 
                 if (room) {
+                    console.log('Room trouvée, permissions par défaut:', room.defaultPermissions);
+
                     // Si c'est le créateur (admin), donner tous les droits
                     if (room.creatorId === currentUser.userId) {
-                        anonymousUserStore.setUserAsAdmin(currentUser.userId);
+                        const adminPermissions = {
+                            editPermissions: true,
+                            sendMessages: true,
+                            deleteMessages: true,
+                            changeVideo: true,
+                            interactionVideo: true
+                        };
+                        anonymousUserStore.updateUserPermissions(currentUser.userId, adminPermissions);
+                        debugLog(`Admin ${currentUser.username} avec tous les droits`);
                     } else {
                         // Vérifier si l'utilisateur a des permissions personnalisées sauvegardées
                         const savedPermissions = userPermissionsStore.getUserPermissions(roomId, currentUser.userId);
 
                         if (savedPermissions) {
-                            // Utiliser les permissions sauvegardées
+                            // Utiliser les permissions sauvegardées (personnalisées)
                             anonymousUserStore.updateUserPermissions(currentUser.userId, savedPermissions);
                             debugLog(`Permissions restaurées pour ${currentUser.username} depuis la sauvegarde`);
                         } else {
-                            // Sinon, appliquer les permissions par défaut de la room
-                            anonymousUserStore.resetUserToDefaultPermissions(currentUser.userId, room.defaultPermissions);
+                            // Utiliser les permissions par défaut de la room
+                            // ✅ S'assurer que c'est bien du JSON
+                            let defaultPerms = room.defaultPermissions;
+                            if (typeof defaultPerms === 'string') {
+                                defaultPerms = JSON.parse(defaultPerms);
+                            }
+                            anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPerms);
+                            debugLog(`Permissions par défaut appliquées pour ${currentUser.username}:`, defaultPerms);
                         }
                     }
                 }
             } catch (error) {
                 debugLog(`Erreur lors de la récupération des permissions: ${error}`);
+                // Appliquer les permissions par défaut en cas d'erreur
+                const defaultPermissions = {
+                    editPermissions: false,
+                    sendMessages: true,
+                    deleteMessages: false,
+                    changeVideo: true,
+                    interactionVideo: true
+                };
+                anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPermissions);
             }
 
-            // Mettre à jour l'activité et le compteur d'utilisateurs de la room
             await roomModel.updateRoomActivity(roomId);
             await roomModel.incrementUserCount(roomId);
 
             debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
 
-            // Confirmer la jointure au client avec les infos utilisateur
+            // ✅ Utiliser room ici (elle est maintenant définie)
             socket.emit('room-joined', {
                 roomId: roomId,
                 timestamp: new Date(),
@@ -192,7 +214,7 @@ function initializeSocket(server, allowedOrigins) {
                     userId: currentUser?.userId,
                     username: currentUser?.username,
                     permissionsSet: currentUser?.permissionsSet,
-                    isAdmin: room?.creatorId === currentUser?.userId
+                    isAdmin: room?.creatorId === currentUser?.userId  // ✅ Maintenant room est défini
                 }
             });
 
@@ -204,8 +226,8 @@ function initializeSocket(server, allowedOrigins) {
                 timestamp: new Date()
             });
 
-            // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
-            sendThrottledUpdateUsers(roomId);
+            // Récupérer la liste des utilisateurs après un court délai
+            socket.emit('get-users', roomId);
         });
 
         // Quitter une room
