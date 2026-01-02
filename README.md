@@ -44,13 +44,20 @@ npm install
 Créer un fichier `.env` dans le dossier backend:
 
 ```env
+# Config DB
 DB_HOST=localhost
-DB_USER=votre_utilisateur
+DB_USER=c2g
 DB_PASSWORD=votre_mot_de_passe
-DB_NAME=chill2gether
+DB_NAME=c2g
 DB_PORT=5432
+
+# Config API
+YT_API_KEY=votre_cle_api
+
+# Config Server
 JWT_SECRET=votre_secret_jwt
 PORT=3000
+NODE_ENV=dev #pour afficher les message de debug
 ```
 
 Lancer le serveur:
@@ -69,7 +76,7 @@ npm install
 Créer un fichier `.env` dans le dossier frontend:
 
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_BACKEND_URL=http://localhost:3000
 ```
 
 Lancer le client:
