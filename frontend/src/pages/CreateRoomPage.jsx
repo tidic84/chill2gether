@@ -93,7 +93,7 @@ export default function CreateRoomPage() {
             {/* Navbar */}
             <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent">
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-zen-bg shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-mug-hot text-lg"></i>
                     </div>
                     <h1 className="text-xl font-bold tracking-tight text-zen-text dark:text-zen-dark-text">
@@ -101,8 +101,8 @@ export default function CreateRoomPage() {
                     </h1>
                 </Link>
 
-                <Link 
-                    to="/" 
+                <Link
+                    to="/"
                     className="flex items-center gap-2 text-sm font-semibold text-zen-muted dark:text-zen-dark-muted hover:text-zen-sage dark:hover:text-zen-dark-sage dark:text-zen-dark-sage transition-colors"
                 >
                     <i className="fa-solid fa-arrow-left"></i>
@@ -113,10 +113,10 @@ export default function CreateRoomPage() {
             {/* Main Content */}
             <main className="flex-grow flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-md mx-auto">
                 <div className="w-full bg-white dark:bg-zen-dark-surface rounded-3xl shadow-lg border border-zen-border dark:border-zen-dark-border p-8">
-                    
+
                     {/* Icon Header */}
                     <div className="flex justify-center mb-6">
-                        <div className="w-16 h-16 bg-zen-sage dark:bg-zen-dark-sage/10 rounded-2xl flex items-center justify-center">
+                        <div className="w-16 h-16 bg-zen-sage/10 dark:bg-zen-dark-sage/10 rounded-2xl flex items-center justify-center">
                             <i className="fa-solid fa-door-open text-3xl text-zen-sage dark:text-zen-dark-sage"></i>
                         </div>
                     </div>
@@ -208,7 +208,7 @@ export default function CreateRoomPage() {
                                         </>
                                     )}
                                 </button>
-                                
+
                                 <button
                                     type="button"
                                     onClick={() => navigate('/')}

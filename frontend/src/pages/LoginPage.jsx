@@ -42,7 +42,7 @@ export default function LoginPage() {
             {/* Navbar */}
             <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent">
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-zen-bg shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-mug-hot text-lg"></i>
                     </div>
                     <h1 className="text-xl font-bold tracking-tight text-zen-text dark:text-zen-dark-text">
@@ -65,7 +65,7 @@ export default function LoginPage() {
 
                     {/* Icon Header */}
                     <div className="flex justify-center mb-6">
-                        <div className="w-16 h-16 bg-zen-sage dark:bg-zen-dark-sage/10 rounded-2xl flex items-center justify-center">
+                        <div className="w-16 h-16 bg-zen-sage/10 dark:bg-zen-dark-sage/10 rounded-2xl flex items-center justify-center">
                             <i className="fa-solid fa-user text-3xl text-zen-sage dark:text-zen-dark-sage"></i>
                         </div>
                     </div>

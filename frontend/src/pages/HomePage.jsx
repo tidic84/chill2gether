@@ -6,6 +6,7 @@ import Stepper, { Step } from "../components/Stepper/Stepper";
 import GridMotion from "../components/GridMotion/GridMotion";
 import { useSocket } from "../contexts/SocketContext";
 import { useAuth } from "../contexts/AuthContext";
+import { roomApi } from "../services/api";
 
 export default function HomePage() {
     const [showTutorial, setShowTutorial] = useState(false);
@@ -14,6 +15,7 @@ export default function HomePage() {
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [error, setError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
     const inputRef = useRef(null);
     const navigate = useNavigate();
     const socket = useSocket();
@@ -43,20 +45,43 @@ export default function HomePage() {
         }, 1000);
     };
 
-    const handleJoinRoom = () => {
+    const handleJoinRoom = async () => {
         const code = joinCode.trim();
 
         if (code === "") {
             setError(true);
-            setTimeout(() => setError(false), 500);
-            inputRef.current?.focus();
-        } else {
-            setIsJoining(true);
+            setErrorMessage("Veuillez entrer un code de room");
             setTimeout(() => {
-                // Navigation vers la room avec le code
+                setError(false);
+                setErrorMessage("");
+            }, 3000);
+            inputRef.current?.focus();
+            return;
+        }
+
+        setIsJoining(true);
+        setError(false);
+        setErrorMessage("");
+
+        try {
+            // Vérifier si la room existe
+            await roomApi.getRoom(code);
+
+            // Si la room existe, naviguer vers elle
+            setTimeout(() => {
                 navigate(`/room/${code}`);
                 setIsJoining(false);
             }, 800);
+        } catch (err) {
+            // Si la room n'existe pas
+            setError(true);
+            setErrorMessage("Cette room n'existe pas");
+            setIsJoining(false);
+            setTimeout(() => {
+                setError(false);
+                setErrorMessage("");
+            }, 3000);
+            inputRef.current?.focus();
         }
     };
 
@@ -79,7 +104,7 @@ export default function HomePage() {
             {/* Navbar */}
             <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent">
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-                    <div className="w-10 h-10 bg-zen-sage rounded-xl flex items-center justify-center text-zen-bg shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-10 h-10 bg-zen-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-mug-hot text-lg"></i>
                     </div>
                     <h1 className="text-xl font-bold tracking-tight text-zen-text">
@@ -126,14 +151,14 @@ export default function HomePage() {
                     </div>
 
                     {/* Titre */}
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-zen-text leading-[1.1] mb-6">
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-zen-text dark:text-zen-dark-text leading-[1.1] mb-6">
                         Prenez le temps,
                         <br />
                         <span className="relative inline-block">
-                            <span className="relative z-10 text-zen-sage">
+                            <span className="relative z-10 text-zen-sage dark:text-zen-dark-sage">
                                 ensemble.
                             </span>
-                            <span className="absolute bottom-2 left-0 w-full h-3 bg-zen-clay/20 -rotate-2 -z-0 rounded-full"></span>
+                            <span className="absolute bottom-2 left-0 w-full h-3 bg-zen-clay/20 dark:bg-zen-dark-clay/20 -rotate-2 -z-0 rounded-full"></span>
                         </span>
                     </h1>
 
@@ -176,15 +201,16 @@ export default function HomePage() {
                         </div>
 
                         {/* 2. INPUT REJOINDRE */}
-                        <div
-                            className={`join-input-container relative flex p-1.5 rounded-2xl w-full ${
-                                error ? "ring-2 ring-red-300 animate-pulse" : ""
-                            }`}
-                        >
+                        <div className="space-y-2">
+                            <div
+                                className={`join-input-container relative flex p-1.5 rounded-2xl w-full ${
+                                    error ? "ring-2 ring-zen-clay animate-pulse" : ""
+                                }`}
+                            >
                             <input
                                 ref={inputRef}
                                 type="text"
-                                className="flex-grow bg-transparent text-zen-text px-4 py-2 outline-none font-medium text-base placeholder:text-zen-muted/70 text-center"
+                                className="flex-grow bg-transparent text-zen-text dark:text-zen-dark-text px-4 py-2 outline-none font-medium text-base placeholder:text-zen-muted/70 dark:placeholder:text-zen-dark-muted/70 text-center"
                                 placeholder="Entrer un code..."
                                 value={joinCode}
                                 onChange={handleInputChange}
@@ -205,6 +231,12 @@ export default function HomePage() {
                                 )}
                             </button>
                         </div>
+                        {errorMessage && (
+                            <p className="text-sm text-zen-clay font-medium text-center animate-pulse">
+                                {errorMessage}
+                            </p>
+                        )}
+                    </div>
                     </div>
 
                     {/* Icons minimalistes */}
