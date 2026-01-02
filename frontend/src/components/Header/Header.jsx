@@ -1,9 +1,11 @@
 import { Coffee, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Header({ roomCode }) {
     const [copied, setCopied] = useState(false);
+    const { isAuthenticated, user } = useAuth();
 
     const handleCopyCode = () => {
         if (roomCode) {
@@ -26,28 +28,41 @@ export default function Header({ roomCode }) {
                     </h1>
                 </Link>
 
-                {/* Room Code - Only show if roomCode exists */}
-                {roomCode && (
-                    <div
-                        onClick={handleCopyCode}
-                        className="flex items-center gap-4 bg-zen-light-cream border border-zen-warm-stone pl-5 pr-2 py-1 rounded-full shadow-sm hover:shadow-md hover:border-zen-sage/30 transition-all cursor-pointer group"
-                    >
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-zen-sage animate-pulse"></div>
-                            <span className="text-sm font-bold text-zen-medium-stone tracking-wide">
-                                {roomCode}
-                            </span>
+                <div className="flex items-center gap-4">
+                    {/* Room Code - Only show if roomCode exists */}
+                    {roomCode && (
+                        <div
+                            onClick={handleCopyCode}
+                            className="flex items-center gap-4 bg-zen-light-cream border border-zen-warm-stone pl-5 pr-2 py-1 rounded-full shadow-sm hover:shadow-md hover:border-zen-sage/30 transition-all cursor-pointer group"
+                        >
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-zen-sage animate-pulse"></div>
+                                <span className="text-sm font-bold text-zen-medium-stone tracking-wide">
+                                    {roomCode}
+                                </span>
+                            </div>
+                            <div className="h-4 w-px bg-zen-warm-stone"></div>
+                            <div className="w-8 h-8 rounded-full bg-white border border-zen-warm-stone flex items-center justify-center text-zen-stone group-hover:text-zen-sage group-hover:border-zen-sage/50 transition-all">
+                                {copied ? (
+                                    <span className="text-xs font-bold">✓</span>
+                                ) : (
+                                    <Copy size={14} strokeWidth={2} />
+                                )}
+                            </div>
                         </div>
-                        <div className="h-4 w-px bg-zen-warm-stone"></div>
-                        <div className="w-8 h-8 rounded-full bg-white border border-zen-warm-stone flex items-center justify-center text-zen-stone group-hover:text-zen-sage group-hover:border-zen-sage/50 transition-all">
-                            {copied ? (
-                                <span className="text-xs font-bold">✓</span>
-                            ) : (
-                                <Copy size={14} strokeWidth={2} />
-                            )}
-                        </div>
-                    </div>
-                )}
+                    )}
+
+                    {/* Profile Link - Only show if authenticated */}
+                    {isAuthenticated && (
+                        <Link
+                            to="/profile"
+                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-zen-light-cream border border-zen-warm-stone text-zen-stone hover:text-zen-sage hover:border-zen-sage/50 transition-all"
+                        >
+                            <i className="fa-solid fa-user text-sm"></i>
+                            <span className="text-sm font-bold hidden md:inline">{user?.username || user?.email}</span>
+                        </Link>
+                    )}
+                </div>
             </div>
         </header>
     );

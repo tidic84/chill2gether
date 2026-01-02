@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const baseUrl = import.meta.env.VITE_BASE_URL;
+const baseUrl = import.meta.env.VITE_BACKEND_URL;
 
 export default function RegisterPage() {
     const navigate = useNavigate();
@@ -9,6 +9,7 @@ export default function RegisterPage() {
         nom: "",
         email: "",
         password: "",
+        confirm: "",
     });
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -20,9 +21,13 @@ export default function RegisterPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!form.nom.trim() || !form.email.trim() || !form.password.trim()) {
+        if (!form.nom.trim() || !form.email.trim() || !form.password.trim() || !form.confirm.trim()) {
             setErrorMessage("Veuillez remplir tous les champs.");
             return;
+        }
+        if (form.password != form.confirm) {
+          setErrorMessage("Les deux mot de passes doivent être identique.");
+          return;
         }
 
         try {
@@ -33,7 +38,7 @@ export default function RegisterPage() {
             const response = await fetch(`${baseUrl}/api/users/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+              body: JSON.stringify({ email: form.email, username: form.nom, password: form.password}),
             });
 
             const data = await response.json();
@@ -63,7 +68,7 @@ export default function RegisterPage() {
             // 3️⃣ Sauvegarde du token + redirection
             if (loginData.token) {
                 localStorage.setItem("token", loginData.token);
-                navigate("/dashboard");
+                navigate("/profile");
             }
         } catch (error) {
             console.error("Erreur lors de l'inscription/connexion :", error);
@@ -164,6 +169,25 @@ export default function RegisterPage() {
                                     id="password"
                                     type="password"
                                     value={form.password}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 bg-zen-surface border border-zen-border rounded-xl text-zen-text placeholder:text-zen-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"
+                                    placeholder="••••••••"
+                                />
+                                <i className="fa-solid fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-zen-muted"></i>
+                            </div>
+                        </div>
+
+                        {/* Confirmation Mot de passe */}
+                        <div className="space-y-2">
+                            <label htmlFor="confirm" className="block text-sm font-bold text-zen-text">
+                              Confirmation
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="confirm"
+                                    type="password"
+                                    value={form.confirm}
                                     onChange={handleChange}
                                     required
                                     className="w-full px-4 py-3 bg-zen-surface border border-zen-border rounded-xl text-zen-text placeholder:text-zen-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"

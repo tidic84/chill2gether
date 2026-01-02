@@ -5,6 +5,7 @@ import SpotlightCard from "../components/SpotlightCard/SpotlightCard";
 import Stepper, { Step } from "../components/Stepper/Stepper";
 import GridMotion from "../components/GridMotion/GridMotion";
 import { useSocket } from "../contexts/SocketContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function HomePage() {
     const [showTutorial, setShowTutorial] = useState(false);
@@ -16,6 +17,7 @@ export default function HomePage() {
     const inputRef = useRef(null);
     const navigate = useNavigate();
     const socket = useSocket();
+    const { isAuthenticated, user } = useAuth();
 
     useEffect(() => {
         socket.on("connect", () => {
@@ -87,18 +89,30 @@ export default function HomePage() {
                 </Link>
 
                 <div className="flex items-center gap-6">
-                    <Link
-                        to="/login"
-                        className="hidden md:block text-sm font-semibold text-zen-muted hover:text-zen-sage transition-colors"
-                    >
-                        Se connecter
-                    </Link>
-                    <Link
-                        to="/register"
-                        className="px-6 py-2.5 rounded-full bg-white border border-zen-border text-zen-text text-sm font-bold hover:border-zen-sage hover:text-zen-sage transition-all shadow-sm"
-                    >
-                        S'inscrire
-                    </Link>
+                    {isAuthenticated ? (
+                        <Link
+                            to="/profile"
+                            className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-white border border-zen-border text-zen-text text-sm font-bold hover:border-zen-sage hover:text-zen-sage transition-all shadow-sm"
+                        >
+                            <i className="fa-solid fa-user"></i>
+                            <span className="hidden md:inline">{user?.username || user?.email}</span>
+                        </Link>
+                    ) : (
+                        <>
+                            <Link
+                                to="/login"
+                                className="hidden md:block text-sm font-semibold text-zen-muted hover:text-zen-sage transition-colors"
+                            >
+                                Se connecter
+                            </Link>
+                            <Link
+                                to="/register"
+                                className="px-6 py-2.5 rounded-full bg-white border border-zen-border text-zen-text text-sm font-bold hover:border-zen-sage hover:text-zen-sage transition-all shadow-sm"
+                            >
+                                S'inscrire
+                            </Link>
+                        </>
+                    )}
                 </div>
             </nav>
 

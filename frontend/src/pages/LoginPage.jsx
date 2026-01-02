@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-const baseUrl = import.meta.env.VITE_BASE_URL;
+const baseUrl = import.meta.env.VITE_BACKEND_URL;
 
 export default function LoginPage() {
     const navigate = useNavigate();
+    const { login: authLogin } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const login = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError(null);
 
@@ -22,28 +24,10 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const response = await fetch(`${baseUrl}/api/users/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    email: email.trim(),
-                    password: password.trim(),
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.error || data.message || "Erreur lors de la connexion.");
-                return;
-            }
-
-            if (data.token) {
-                localStorage.setItem("token", data.token);
-                navigate("/dashboard");
-            }
-        } catch {
-            setError("Impossible de se connecter au serveur. Veuillez réessayer.");
+            await authLogin(email.trim(), password.trim());
+            navigate("/profile");
+        } catch (err) {
+            setError(err.message || "Erreur lors de la connexion.");
         } finally {
             setLoading(false);
         }
@@ -66,8 +50,8 @@ export default function LoginPage() {
                     </h1>
                 </Link>
 
-                <Link 
-                    to="/" 
+                <Link
+                    to="/"
                     className="flex items-center gap-2 text-sm font-semibold text-zen-muted hover:text-zen-sage transition-colors"
                 >
                     <i className="fa-solid fa-arrow-left"></i>
@@ -78,7 +62,7 @@ export default function LoginPage() {
             {/* Main Content */}
             <main className="flex-grow flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-md mx-auto">
                 <div className="w-full bg-white rounded-3xl shadow-lg border border-zen-border p-8">
-                    
+
                     {/* Icon Header */}
                     <div className="flex justify-center mb-6">
                         <div className="w-16 h-16 bg-zen-sage/10 rounded-2xl flex items-center justify-center">
@@ -91,7 +75,7 @@ export default function LoginPage() {
                         Accédez à votre espace personnel
                     </p>
 
-                    <form onSubmit={login} className="space-y-5">
+                    <form onSubmit={handleLogin} className="space-y-5">
                         {/* Email */}
                         <div className="space-y-2">
                             <label htmlFor="email" className="block text-sm font-bold text-zen-text">

@@ -4,13 +4,16 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import CreateRoomPage from "./pages/CreateRoomPage";
+import ProfilePage from "./pages/ProfilePage";
 import { SocketProvider } from './contexts/SocketContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
   return (
-    <SocketProvider>
-    <Router>
-      <Routes>
+    <AuthProvider>
+      <SocketProvider>
+        <Router>
+          <Routes>
         {/* Page d'un salon dynamique */}
         <Route path="/room/:roomId" element={<RoomPage />} />
 
@@ -23,9 +26,13 @@ function App() {
         {/* Pages d'authentification */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-      </Routes>
-    </Router>
-    </SocketProvider>
+
+        {/* Page de profil */}
+        <Route path="/profile" element={<ProfilePage />} />
+          </Routes>
+        </Router>
+      </SocketProvider>
+    </AuthProvider>
   );
 }
 
