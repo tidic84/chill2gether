@@ -40,10 +40,10 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
     const [isReady, setIsReady] = useState(false);
     const isLocalActionRef = useRef(false);
     const onEndedRef = useRef(onEnded);
+    const hasSyncedRef = useRef(false);
+    const ignoreNextPlayRef = useRef(false);
 
-    console.log('🎬 VideoPlayer reçoit url:', url, 'type:', typeof url);
     const videoId = extractYouTubeID(url);
-    console.log('🆔 VideoId extrait:', videoId);
 
     // Mettre à jour la ref onEnded
     useEffect(() => {
@@ -74,17 +74,18 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
         const initPlayer = () => {
             if (!window.YT || !window.YT.Player) {
-                setTimeout(initPlayer, 100);
+                setTimeout(initPlayer, 500);
                 return;
             }
 
             const container = document.getElementById('youtube-player');
             if (!container) {
-                setTimeout(initPlayer, 100);
+                setTimeout(initPlayer, 500);
                 return;
             }
 
-            console.log("🔨 Création du player avec vidéo:", videoId);
+            console.log("Création du player avec vidéo:", videoId);
+            ignoreNextPlayRef.current = true; //Ignorer le premier play automatique
 
             try {
                 playerRef.current = new window.YT.Player('youtube-player', {
@@ -105,19 +106,33 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                             playerReadyRef.current = true;
                             loadedVideoIdRef.current = videoId;
                             setIsReady(true);
+
+                            // Demander la sync au backend
+                            if (!hasSyncedRef.current && roomId) {
+                                setTimeout(() => {
+                                    console.log("Demande de synchronisation au backend...");
+                                    socket.emit('request-sync', roomId);
+                                }, 500); // Petit délai pour laisser le player s'initialiser
+                            }
                         },
                         onStateChange: (event) => {
                             // Vidéo terminée
                             if (event.data === 0) {
-                                console.log("⏭️ Vidéo terminée");
+                                console.log("Vidéo terminée");
                                 if (onEndedRef.current) {
                                     onEndedRef.current();
                                 }
                             }
 
-                            // Synchronisation play/pause
+                            //Ignorer le premier play automatique
                             if (!isLocalActionRef.current) {
                                 if (event.data === 1) {
+                                    if (ignoreNextPlayRef.current) {
+                                        console.log("Premier play ignoré (chargement initial)");
+                                        ignoreNextPlayRef.current = false;
+                                        return;
+                                    }
+
                                     socket.emit("video-play", {
                                         roomId,
                                         time: event.target.getCurrentTime()
@@ -148,7 +163,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         };
 
         initPlayer();
-    }, [videoId, autoplay]); // Se déclenche quand videoId change, mais ne crée qu'une fois
+    }, [videoId, autoplay, roomId, socket]); // Se déclenche quand videoId change, mais ne crée qu'une fois
 
     // Cleanup au démontage du composant
     useEffect(() => {
@@ -163,10 +178,50 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                     playerRef.current = null;
                     playerReadyRef.current = false;
                     loadedVideoIdRef.current = null;
+                    hasSyncedRef.current = false;
                 }
             }
         };
     }, []); // Dépendances vides = cleanup seulement au démontage
+
+    //Écouter la réponse de synchronisation
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleSyncResponse = (data) => {
+            console.log("Réponse de sync reçue:", data);
+            
+            // Ne pas synchroniser si déjà fait
+            if (hasSyncedRef.current) {
+                console.log("Déjà synchronisé, ignorer");
+                return;
+            }
+            
+            // Synchroniser seulement si une vidéo est en cours de lecture
+            if (playerRef.current && playerReadyRef.current && data.hasVideo && data.isPlaying) {
+                const currentTime = data.currentTime;
+                console.log("Synchronisation au temps:", currentTime, "secondes");
+                
+                isLocalActionRef.current = true;
+                playerRef.current.seekTo(currentTime, true);
+                
+                setTimeout(() => {
+                    isLocalActionRef.current = false;
+                }, 100);
+                
+                hasSyncedRef.current = true;
+            } else if (data.hasVideo && !data.isPlaying) {
+                console.log("Vidéo en pause, pas de synchronisation automatique");
+                hasSyncedRef.current = true;
+            }
+        };
+
+        socket.on("sync-response", handleSyncResponse);
+
+        return () => {
+            socket.off("sync-response", handleSyncResponse);
+        };
+    }, [socket]);
 
     // Charger une nouvelle vidéo quand videoId change
     useEffect(() => {
@@ -176,7 +231,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
         // Si pas de vidéo, stopper le player et le masquer
         if (!videoId) {
-            console.log("⏹️ Arrêt du player - playlist vide");
+            console.log("Arrêt du player - playlist vide");
             try {
                 playerRef.current.stopVideo();
                 loadedVideoIdRef.current = null;
@@ -191,7 +246,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
             return;
         }
 
-        console.log("🎵 Chargement nouvelle vidéo:", videoId, "autoplay:", autoplay);
+        console.log("Chargement nouvelle vidéo:", videoId, "autoplay:", autoplay);
 
         try {
             if (autoplay) {
@@ -217,33 +272,36 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
         const handlePlaySync = ({ time }) => {
             if (playerRef.current && playerRef.current.playVideo) {
+                console.log("Sync play reçu:", time);
                 isLocalActionRef.current = true;
                 playerRef.current.seekTo(time, true);
                 playerRef.current.playVideo();
                 setTimeout(() => {
                     isLocalActionRef.current = false;
-                }, 500);
+                }, 100);
             }
         };
 
         const handlePauseSync = ({ time }) => {
             if (playerRef.current && playerRef.current.pauseVideo) {
+                console.log("Sync pause reçu:", time);
                 isLocalActionRef.current = true;
                 playerRef.current.seekTo(time, true);
                 playerRef.current.pauseVideo();
                 setTimeout(() => {
                     isLocalActionRef.current = false;
-                }, 500);
+                }, 100);
             }
         };
 
         const handleSeekSync = ({ time }) => {
             if (playerRef.current && playerRef.current.seekTo) {
+                console.log("Sync seek reçu:", time);
                 isLocalActionRef.current = true;
                 playerRef.current.seekTo(time, true);
                 setTimeout(() => {
                     isLocalActionRef.current = false;
-                }, 500);
+                }, 100);
             }
         };
 

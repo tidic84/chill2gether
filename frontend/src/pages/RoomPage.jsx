@@ -164,6 +164,7 @@ export default function RoomPage() {
 
             setCurrentVideoIndex(data.videoIndex);
             setCurrentVideoUrl(data.video.url);
+            setShouldAutoplay(true); 
         };
 
         socket.on('video-changed', handleVideoChanged);
@@ -217,7 +218,6 @@ export default function RoomPage() {
     // Gérer la fin de la vidéo
     const handleVideoEnded = () => {
         console.log('Video ended');
-        setShouldAutoplay(false); // Ne pas lancer automatiquement la prochaine
         socket.emit('video-ended', { roomId });
     };
 
@@ -343,7 +343,7 @@ export default function RoomPage() {
 
                     <div className="relative z-10 w-full max-w-md p-8 bg-black/60 backdrop-blur-md rounded-xl shadow-lg">
                         <div className="text-center mb-6">
-                            <div className="text-5xl mb-4"></div>
+                            <div className="text-5xl mb-4">🔒</div>
                             <h1 className="text-3xl font-bold mb-2">Room Privée</h1>
                             <p className="text-gray-300">
                                 Cette room nécessite un mot de passe

@@ -1,5 +1,6 @@
 import { Coffee, Copy } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Header({ roomCode }) {
     const [copied, setCopied] = useState(false);
@@ -16,14 +17,14 @@ export default function Header({ roomCode }) {
         <header className="relative top-0 z-50 bg-white/90 backdrop-blur-md border-b border-zen-warm-stone px-6 py-4 shadow-sm">
             <div className="max-w-[1600px] mx-auto flex justify-between items-center">
                 {/* Logo */}
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-zen-sage rounded-xl flex items-center justify-center text-zen-cream shadow-md shadow-zen-sage/20">
-                        <Coffee size={18} strokeWidth={2.5} />
+                <Link to="/" className="flex items-center gap-3 cursor-pointer group">
+                    <div className="w-10 h-10 bg-zen-sage rounded-xl flex items-center justify-center text-zen-bg shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                        <i className="fa-solid fa-mug-hot text-lg"></i>
                     </div>
-                    <h1 className="text-lg font-bold tracking-tight text-zen-darkest">
-                        chill<span className="text-zen-stone font-medium">2gether</span>
+                    <h1 className="text-xl font-bold tracking-tight text-zen-text">
+                        chill<span className="text-zen-muted font-medium">2gether</span>
                     </h1>
-                </div>
+                </Link>
 
                 {/* Room Code - Only show if roomCode exists */}
                 {roomCode && (

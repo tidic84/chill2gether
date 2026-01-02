@@ -6,35 +6,35 @@ export default {
     ],
     theme: {
         extend: {
+            fontFamily: {
+                sans: ['Outfit', 'sans-serif'],
+            },
             colors: {
                 zen: {
-                    cream: '#F2F0E9',
-                    'warm-stone': '#E7E5E4',
-                    'light-cream': '#FAF9F6',
-                    'sage': '#4A5D4F',
-                    'stone': '#A8A29E',
-                    'warm-beige': '#D6C0B3',
-                    'terracotta': '#C67D63',
-                    'charcoal': '#44403C',
-                    'dark-stone': '#78716C',
-                    'medium-stone': '#57534E',
-                    'light-stone': '#D6D3D1',
-                    'darkest': '#292524',
-                    'near-black': '#1C1917',
+                    bg: '#F2F0E9',        // Fond Crème
+                    surface: '#FAF9F6',   // Surface très claire
+                    card: '#FFFFFF',      // Blanc pur
+                    border: '#E7E5E4',    // Bordures douces
+                    text: '#44403C',      // Texte Brun Sombre
+                    muted: '#A8A29E',     // Texte Gris chaud
+                    sage: '#4A5D4F',      // Vert Sauge (Primaire)
+                    clay: '#C67D63',      // Terracotta (Secondaire)
+                    stone: '#78716C',     // Gris Pierre
                 },
             },
             keyframes: {
-                gradientShift: {
-                    '0%': { backgroundPosition: '0% 50%' },
-                    '50%': { backgroundPosition: '100% 50%' },
-                    '100%': { backgroundPosition: '0% 50%' },
+                float: {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-15px)' },
+                },
+                breathe: {
+                    '0%, 100%': { transform: 'scale(1)', opacity: '0.4' },
+                    '50%': { transform: 'scale(1.1)', opacity: '0.6' },
                 },
             },
             animation: {
-                gradientShift: 'gradientShift 30s ease infinite',
-            },
-            backgroundSize: {
-                '400%': '400% 400%',
+                float: 'float 8s ease-in-out infinite',
+                breathe: 'breathe 6s ease-in-out infinite',
             },
         },
     },

@@ -2,6 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply bg-zen-bg text-zen-text;
+  }
+}
+
+/* Formes organiques d'ambiance */
+.organic-shape {
+  position: absolute;
+  filter: blur(80px);
+  z-index: -1;
+  opacity: 0.5;
+}
+
+.shape-sage {
+  top: -10%;
+  right: -10%;
+  width: 40vw;
+  height: 40vw;
+  background: #4A5D4F;
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  animation: float 10s ease-in-out infinite;
+  opacity: 0.15;
+}
+
+.shape-clay {
+  bottom: -10%;
+  left: -10%;
+  width: 35vw;
+  height: 35vw;
+  background: #C67D63;
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  animation: float 12s ease-in-out infinite reverse;
+  opacity: 0.15;
+}
+
+/* Input Rejoindre Style */
+.join-input-container {
+  background: #FFFFFF;
+  border: 1px solid #E7E5E4;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.join-input-container:focus-within {
+  border-color: #C67D63;
+  box-shadow: 0 4px 20px -2px rgba(198, 125, 99, 0.1);
+}
+
+/* Bouton Créer (Principal) */
+.btn-create {
+  background-color: #4A5D4F;
+  color: #F2F0E9;
+  transition: all 0.3s ease;
+}
+
+.btn-create:hover {
+  background-color: #3E4E42;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(74, 93, 79, 0.25);
+}
+
+.btn-create:active {
+  transform: translateY(0);
+}
+
+.brand-icon:hover {
+  color: #4A5D4F;
+  transform: translateY(-5px);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
 .pastel-bg {
   position: absolute;
   inset: 0;
