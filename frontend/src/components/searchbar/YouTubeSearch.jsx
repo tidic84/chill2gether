@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
+import { usePermissions } from "../../contexts/SocketContext";
 
 // Fonction pour décoder les entités HTML
 const decodeHTMLEntities = (text) => {
@@ -19,6 +20,8 @@ export default function YouTubeSearch({ onSelectVideo }) {
   const [isSuggestionsAnimating, setIsSuggestionsAnimating] = useState(false);
   const containerRef = useRef(null);
   const isSearchingRef = useRef(false);
+  const permissions = usePermissions();
+  const canChangeVideo = permissions?.changeVideo !== false;
 
   // Fonction optimisée pour récupérer les suggestions
   const fetchSuggestions = useCallback((searchQuery) => {
@@ -146,28 +149,44 @@ export default function YouTubeSearch({ onSelectVideo }) {
     setResults([]);
   };
 
+  const handleVideoSelect = (video) => {
+    if (!canChangeVideo) {
+      return;
+    }
+    onSelectVideo(video);
+  };
+
   return (
     <div ref={containerRef} className="relative w-full">
+      {/* Message de permission */}
+      {!canChangeVideo && (
+        <div className="absolute top-0 left-0 right-0 z-50 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2 mb-2">
+          <i className="fa-solid fa-lock"></i>
+          Vous n'avez pas la permission de changer la vidéo
+        </div>
+      )}
+
       {/* Search Bar */}
-      <div className="relative w-full">
+      <div className={`relative group w-full ${!canChangeVideo ? 'opacity-50 pointer-events-none' : ''}`}>
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-zen-stone" />
         </div>
         <input
           type="text"
-          className="block w-full pl-11 pr-4 py-3 bg-white border border-zen-warm-stone rounded-xl text-sm text-zen-charcoal placeholder-zen-stone outline-none focus:border-zen-stone transition-all shadow-sm"
-          placeholder="Coller un lien YouTube ou rechercher une vidéo..."
+          className={`block w-full pl-11 pr-4 py-3 rounded-xl border border-zen-warm-stone focus:outline-none focus:ring-2 focus:ring-zen-sage/30 ${!canChangeVideo ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+            }`}
+          placeholder="Rechercher une vidéo YouTube..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          disabled={!canChangeVideo}
         />
       </div>
 
       {/* Suggestions en temps réel */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className={`absolute z-50 mt-2 left-0 w-full max-h-[50vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-lg rounded-xl transition-all duration-200 ease-out ${
-          isSuggestionsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-        }`}>
+        <div className={`absolute z-50 mt-2 left-0 w-full max-h-[50vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-lg rounded-xl transition-all duration-200 ease-out ${isSuggestionsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+          }`}>
           {suggestions.map((suggestion, index) => (
             <div
               key={index}
@@ -181,10 +200,9 @@ export default function YouTubeSearch({ onSelectVideo }) {
       )}
 
       {/* Results Dropdown */}
-      { visible && (
-        <div className={`absolute z-50 mt-1 w-full max-h-[72vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-xl rounded-xl transition-all duration-200 ease-out ${
-          isResultsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-        }`}>
+      {visible && (
+        <div className={`absolute z-50 mt-1 w-full max-h-[72vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-xl rounded-xl transition-all duration-200 ease-out ${isResultsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+          }`}>
           <div className="p-4 border-b border-zen-warm-stone flex justify-between items-center">
             <h3 className="font-semibold text-zen-charcoal">
               {results.length} résultat{results.length > 1 ? 's' : ''}
@@ -219,7 +237,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
               Aucun résultat trouvé
             </p>
           )}
-          {!loading &&(
+          {!loading && (
             <div className="p-2 space-y-2">
               {results.map((item) => (
                 <div

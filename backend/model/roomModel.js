@@ -22,12 +22,19 @@ async function generateRoomId() {
 
 async function createRoom(creatorId, requiresPassword = false, password = null) {
     const roomId = await generateRoomId();
+    const defaultPermissions = {
+        editPermissions: false,
+        sendMessages: true,
+        deleteMessages: false,
+        changeVideo: true,
+        interactionVideo: true
+    };
 
     const result = await query(
-        `INSERT INTO room (id, owner_id, requires_password, password, created_at)
-         VALUES ($1, $2, $3, $4, NOW())
-         RETURNING id, owner_id, requires_password, created_at`,
-        [roomId, creatorId, requiresPassword, password]
+        `INSERT INTO room (id, owner_id, requires_password, password, default_permissions, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         RETURNING id, owner_id, requires_password, default_permissions, created_at`,
+        [roomId, creatorId, requiresPassword, password, JSON.stringify(defaultPermissions)]
     );
 
     const room = result.rows[0];
@@ -36,14 +43,15 @@ async function createRoom(creatorId, requiresPassword = false, password = null) 
         id: room.id,
         creatorId: room.owner_id,
         requiresPassword: room.requires_password,
+        defaultPermissions: room.default_permissions,
         createdAt: room.created_at
     };
 }
 
 async function getRoomById(roomId, includePassword = false) {
     const fields = includePassword
-        ? 'id, owner_id, requires_password, password, created_at'
-        : 'id, owner_id, requires_password, created_at';
+        ? 'id, owner_id, requires_password, password, default_permissions, created_at'
+        : 'id, owner_id, requires_password, default_permissions, created_at';
 
     const result = await query(
         `SELECT ${fields} FROM room WHERE id = $1`,
@@ -60,9 +68,23 @@ async function getRoomById(roomId, includePassword = false) {
         id: room.id,
         creatorId: room.owner_id,
         requiresPassword: room.requires_password,
+        defaultPermissions: room.default_permissions,
         ...(includePassword && { password: room.password }),
         createdAt: room.created_at
     };
+}
+
+async function updateDefaultPermissions(roomId, permissions) {
+    const result = await query(
+        'UPDATE room SET default_permissions = $2 WHERE id = $1 RETURNING default_permissions',
+        [roomId, JSON.stringify(permissions)]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Room not found');
+    }
+
+    return result.rows[0].default_permissions;
 }
 
 async function roomExists(roomId) {
@@ -171,5 +193,6 @@ module.exports = {
     updateRoomActivity,
     incrementUserCount,
     decrementUserCount,
-    deleteInactiveRooms
+    deleteInactiveRooms,
+    updateDefaultPermissions
 };

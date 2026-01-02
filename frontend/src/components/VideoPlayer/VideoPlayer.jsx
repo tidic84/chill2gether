@@ -190,25 +190,25 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
         const handleSyncResponse = (data) => {
             console.log("Réponse de sync reçue:", data);
-            
+
             // Ne pas synchroniser si déjà fait
             if (hasSyncedRef.current) {
                 console.log("Déjà synchronisé, ignorer");
                 return;
             }
-            
+
             // Synchroniser seulement si une vidéo est en cours de lecture
             if (playerRef.current && playerReadyRef.current && data.hasVideo && data.isPlaying) {
                 const currentTime = data.currentTime;
                 console.log("Synchronisation au temps:", currentTime, "secondes");
-                
+
                 isLocalActionRef.current = true;
                 playerRef.current.seekTo(currentTime, true);
-                
+
                 setTimeout(() => {
                     isLocalActionRef.current = false;
                 }, 100);
-                
+
                 hasSyncedRef.current = true;
             } else if (data.hasVideo && !data.isPlaying) {
                 console.log("Vidéo en pause, pas de synchronisation automatique");

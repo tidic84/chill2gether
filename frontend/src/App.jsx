@@ -9,22 +9,22 @@ import { SocketProvider } from './contexts/SocketContext';
 function App() {
   return (
     <SocketProvider>
-    <Router>
-      <Routes>
-        {/* Page d'un salon dynamique */}
-        <Route path="/room/:roomId" element={<RoomPage />} />
+      <Router>
+        <Routes>
+          {/* Page d'un salon dynamique */}
+          <Route path="/room/:roomId" element={<RoomPage />} />
 
-        {/* Page d'accueil */}
-        <Route path="/" element={<HomePage />} />
+          {/* Page d'accueil */}
+          <Route path="/" element={<HomePage />} />
 
-        {/* Page de création de room */}
-        <Route path="/create-room" element={<CreateRoomPage />} />
+          {/* Page de création de room */}
+          <Route path="/create-room" element={<CreateRoomPage />} />
 
-        {/* Pages d'authentification */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-      </Routes>
-    </Router>
+          {/* Pages d'authentification */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Routes>
+      </Router>
     </SocketProvider>
   );
 }

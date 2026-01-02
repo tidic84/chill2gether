@@ -74,59 +74,57 @@ function initializePlaylistHandlers(io, socket) {
 
     /**
      * ADD-TO-PLAYLIST
-     * Ajoute une vidéo à la playlist et broadcast à tous les utilisateurs de la room
-     * Si c'est la première vidéo, elle est aussi ajoutée à l'historique (autoplay)
+     * Vérifier la permission changeVideo
      */
     socket.on('add-to-playlist', (data) => {
         try {
             const { roomId, video } = data;
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
 
             if (!roomId || !video) {
                 socket.emit('playlist-error', { error: 'Room ID and video data are required to add a video.' });
                 return;
             }
 
-            const user = anonymousUserStore.getUserBySocketId(socket.id);
-            if (!user) {
-                socket.emit('playlist-error', { error: 'Utilisateur non trouvé' });
+            // Vérifier la permission changeVideo
+            if (!user.permissionsSet.changeVideo) {
+                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit de changer la vidéo' });
                 return;
             }
 
             playlistService.addVideo(roomId, video, user.userId, user.username);
-
             playlistService.broadcastPlaylistUpdate(io, roomId);
-            // Broadcast l'historique si la première vidéo a été ajoutée à l'historique
             playlistService.broadcastHistoryUpdate(io, roomId);
         } catch (error) {
-            debugLog(`Erreur lors de l'ajout de la vidéo à la playlist pour la room ${roomId}: ${error}`);
+            debugLog(`Erreur lors de l'ajout de la vidéo: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while adding the video to the playlist.' });
         }
     });
 
     /**
      * REMOVE-FROM-PLAYLIST
-     * Supprime une vidéo de la playlist (permissions à implémenter)
+     * Vérifier la permission changeVideo
      */
     socket.on('remove-from-playlist', (data) => {
         try {
             const { roomId, videoId } = data;
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
 
             if (roomId === undefined || videoId === undefined) {
                 socket.emit('playlist-error', { error: 'Room ID and video ID are required to remove a video.' });
                 return;
             }
 
-            const user = anonymousUserStore.getUserBySocketId(socket.id);
-            if (!user) {
-                socket.emit('playlist-error', { error: 'Utilisateur non trouvé' });
+            // Vérifier la permission changeVideo
+            if (!user.permissionsSet.changeVideo) {
+                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit de changer la vidéo' });
                 return;
             }
 
             playlistService.removeVideo(roomId, videoId, user.userId);
-
             playlistService.broadcastPlaylistUpdate(io, roomId);
         } catch (error) {
-            debugLog(`Erreur lors de la suppression de la vidéo de la playlist pour la room ${roomId}: ${error}`);
+            debugLog(`Erreur lors de la suppression: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while removing the video from the playlist.' });
         }
     });
@@ -160,17 +158,22 @@ function initializePlaylistHandlers(io, socket) {
 
     /**
      * PLAY-VIDEO
-     * Change manuellement la vidéo en cours de lecture
-     * Ajoute automatiquement la vidéo à l'historique
-     * Émet 'video-changed' et 'history-updated'
+     * Vérifier la permission changeVideo
      */
     socket.on('play-video', (data) => {
         try {
             const roomId = data.roomId;
             const videoIndex = data.videoIndex;
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
 
             if (roomId === undefined || videoIndex === undefined) {
                 socket.emit('playlist-error', { error: 'roomId et videoIndex requis' });
+                return;
+            }
+
+            // Vérifier la permission changeVideo
+            if (!user.permissionsSet.changeVideo) {
+                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit de changer la vidéo' });
                 return;
             }
 
@@ -179,12 +182,11 @@ function initializePlaylistHandlers(io, socket) {
                 return;
             }
 
-            // playVideo ajoute automatiquement à l'historique et broadcast
             const videoData = playlistService.playVideo(roomId, videoIndex, io);
-
             io.to(roomId).emit('video-changed', videoData);
+            playlistService.broadcastHistoryUpdate(io, roomId);
         } catch (error) {
-            debugLog(`Erreur lors de la lecture de la vidéo dans la playlist pour la room ${roomId}: ${error}`);
+            debugLog(`Erreur lors de la lecture: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while playing the video from the playlist.' });
         }
     });
@@ -230,20 +232,24 @@ function initializePlaylistHandlers(io, socket) {
 
     /**
      * VIDEO-PLAY
-     * Synchronise le play entre tous les utilisateurs
+     * Vérifier la permission interactionVideo
      */
     socket.on('video-play', (data) => {
         try {
             const { roomId, time } = data;
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
 
             if (!roomId) {
                 socket.emit('playlist-error', { error: 'Room ID requis' });
                 return;
             }
 
-            const user = anonymousUserStore.getUserBySocketId(socket.id);
+            // Vérifier la permission interactionVideo
+            if (!user.permissionsSet.interactionVideo) {
+                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo' });
+                return;
+            }
 
-            // Broadcast à tous SAUF l'émetteur
             socket.to(roomId).emit('video-play-sync', {
                 time: time || 0,
                 username: user?.username
@@ -257,20 +263,24 @@ function initializePlaylistHandlers(io, socket) {
 
     /**
      * VIDEO-PAUSE
-     * Synchronise le pause entre tous les utilisateurs
+     * Vérifier la permission interactionVideo
      */
     socket.on('video-pause', (data) => {
         try {
             const { roomId, time } = data;
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
 
             if (!roomId) {
                 socket.emit('playlist-error', { error: 'Room ID requis' });
                 return;
             }
 
-            const user = anonymousUserStore.getUserBySocketId(socket.id);
+            // Vérifier la permission interactionVideo
+            if (!user.permissionsSet.interactionVideo) {
+                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo' });
+                return;
+            }
 
-            // Broadcast à tous SAUF l'émetteur
             socket.to(roomId).emit('video-pause-sync', {
                 time: time || 0,
                 username: user?.username
@@ -284,20 +294,24 @@ function initializePlaylistHandlers(io, socket) {
 
     /**
      * VIDEO-SEEK
-     * Synchronise le seek (déplacement dans la timeline) entre tous les utilisateurs
+     * Vérifier la permission interactionVideo
      */
     socket.on('video-seek', (data) => {
         try {
             const { roomId, time } = data;
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
 
             if (!roomId || time === undefined) {
                 socket.emit('playlist-error', { error: 'Room ID et time requis' });
                 return;
             }
 
-            const user = anonymousUserStore.getUserBySocketId(socket.id);
+            // Vérifier la permission interactionVideo
+            if (!user.permissionsSet.interactionVideo) {
+                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo' });
+                return;
+            }
 
-            // Broadcast à tous SAUF l'émetteur
             socket.to(roomId).emit('video-seek-sync', {
                 time,
                 username: user?.username
@@ -309,6 +323,40 @@ function initializePlaylistHandlers(io, socket) {
         }
     });
 
+    /**
+     * CHAT-MESSAGE
+     * Vérifier la permission sendMessages
+     */
+    socket.on('chat-message', ({ roomId, message }) => {
+        const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
+
+        if (!currentUser) {
+            debugLog(`Utilisateur non trouvé pour le socket ${socket.id}`);
+            return;
+        }
+
+        // Vérifier la permission sendMessages
+        if (!currentUser.permissionsSet.sendMessages) {
+            socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit d\'envoyer des messages' });
+            return;
+        }
+
+        if (!roomId || !message || !message.trim()) {
+            debugLog(`Message invalide reçu de ${currentUser.username}`);
+            return;
+        }
+
+        const chatMessage = {
+            userId: currentUser.userId,
+            username: currentUser.username,
+            message: message.trim(),
+            timestamp: new Date().toISOString(),
+            roomId: roomId
+        };
+
+        debugLog(`Message reçu de ${currentUser.username} dans la room ${roomId}: ${message}`);
+        io.to(roomId).emit("chat-message", chatMessage);
+    });
 }
 
 module.exports = { initializePlaylistHandlers };

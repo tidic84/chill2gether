@@ -5,6 +5,8 @@ const { debugLog } = require("../utils/utils");
 const { initializeChatHandlers } = require("../services/chatService");
 const { initializePlaylistHandlers } = require('./handlers/playlistHandlers');
 const playlistService = require("../services/playlistService");
+const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
+
 
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
@@ -55,6 +57,9 @@ function initializeSocket(server, allowedOrigins) {
     // Gestion des connexions
     io.on('connection', (socket) => {
         debugLog(`Nouveau client connecté: ${socket.id}`);
+
+        // Initialiser les gestionnaires de permissions pour ce socket
+        initializePermissionsHandlers(io, socket);
 
         // ### Partie Vérifier si l'utilisateur a déjà un userId (reconnexion)
         const existingUserId = socket.handshake.auth.userId;
@@ -144,9 +149,26 @@ function initializeSocket(server, allowedOrigins) {
 
             anonymousUserStore.setUserRoom(currentUser.userId, roomId);
 
+            // Récupérer les permissions par défaut de la room
+            try {
+                const room = await roomModel.getRoomById(roomId, false);
+
+                if (room) {
+                    // Si c'est le créateur (admin), donner tous les droits
+                    if (room.creatorId === currentUser.userId) {
+                        anonymousUserStore.setUserAsAdmin(currentUser.userId);
+                    } else {
+                        // Sinon, appliquer les permissions par défaut de la room
+                        anonymousUserStore.setUserDefaultPermissions(currentUser.userId, room.defaultPermissions);
+                    }
+                }
+            } catch (error) {
+                debugLog(`Erreur lors de la récupération des permissions: ${error}`);
+            }
+
             // Mettre à jour l'activité et le compteur d'utilisateurs de la room
-            await roomModel.incrementUserCount(roomId);
             await roomModel.updateRoomActivity(roomId);
+            await roomModel.incrementUserCount(roomId);
 
             debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
 
@@ -156,7 +178,8 @@ function initializeSocket(server, allowedOrigins) {
                 timestamp: new Date(),
                 user: {
                     userId: currentUser?.userId,
-                    username: currentUser?.username
+                    username: currentUser?.username,
+                    permissionsSet: currentUser?.permissionsSet
                 }
             });
 

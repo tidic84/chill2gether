@@ -33,7 +33,15 @@ class AnonymousUserStore {
             username: username || `User${userId.substring(0, 8)}`,
             connectedAt: new Date(),
             lastActivity: new Date(),
-            disconnectedAt: null // Null si connecté, Date si déconnecté temporairement
+            disconnectedAt: null,
+            currentRoomId: null,
+            permissionsSet: {
+                editPermissions: false,
+                sendMessages: true,
+                deleteMessages: false,
+                changeVideo: true,
+                interactionVideo: true
+            }
         };
 
         this.users.set(userId, user);
@@ -256,6 +264,52 @@ class AnonymousUserStore {
         const user = this.users.get(userId);
         if (user) {
             user.currentRoomId = roomId;
+        }
+    }
+
+    /**
+     * Met à jour les permissions d'un utilisateur
+     * @param {string} userId - ID de l'utilisateur
+     * @param {object} permissions - Objet permissions
+     * @returns {boolean} Succès de l'opération
+     */
+    updateUserPermissions(userId, permissions) {
+        const user = this.users.get(userId);
+        if (user) {
+            user.permissionsSet = { ...user.permissionsSet, ...permissions };
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Définit les permissions par défaut d'une room pour un utilisateur
+     * @param {string} userId - ID de l'utilisateur
+     * @param {object} defaultPermissions - Permissions par défaut de la room
+     */
+    setUserDefaultPermissions(userId, defaultPermissions) {
+        const user = this.users.get(userId);
+        if (user) {
+            user.permissionsSet = { ...defaultPermissions };
+            debugLog(`Permissions définies pour l'utilisateur ${userId}: ${JSON.stringify(defaultPermissions)}`);
+        }
+    }
+
+    /**
+     * Définit les permissions d'admin pour un utilisateur
+     * @param {string} userId - ID de l'utilisateur
+     */
+    setUserAsAdmin(userId) {
+        const user = this.users.get(userId);
+        if (user) {
+            user.permissionsSet = {
+                editPermissions: true,
+                sendMessages: true,
+                deleteMessages: true,
+                changeVideo: true,
+                interactionVideo: true
+            };
+            debugLog(`L'utilisateur ${userId} est maintenant admin`);
         }
     }
 
