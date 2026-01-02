@@ -20,6 +20,37 @@ export default function YouTubeSearch({ onSelectVideo }) {
   const containerRef = useRef(null);
   const isSearchingRef = useRef(false);
 
+const normalizeYouTubeInput = (input) => {
+  try {
+    // Cas URL
+    if (input.startsWith("http")) {
+      const url = new URL(input);
+
+      // youtu.be/VIDEO_ID
+      if (url.hostname.includes("youtu.be")) {
+        const videoId = url.pathname.slice(1);
+        return `https://www.youtube.com/watch?v=${videoId}`;
+      }
+
+      // youtube.com/watch?v=VIDEO_ID
+      if (url.hostname.includes("youtube.com")) {
+        const videoId = url.searchParams.get("v");
+        if (videoId) {
+          return `https://www.youtube.com/watch?v=${videoId}`;
+        }
+      }
+    }
+
+    // Sinon, recherche classique (texte)
+    return input;
+  } catch {
+    // Si l’URL est mal formée → on traite comme une recherche
+    return input;
+  }
+};
+
+
+
   // Fonction optimisée pour récupérer les suggestions
   const fetchSuggestions = useCallback((searchQuery) => {
     if (!searchQuery.trim() || isSearchingRef.current) {
@@ -105,7 +136,8 @@ export default function YouTubeSearch({ onSelectVideo }) {
 
   const handleSearch = async (searchQuery) => {
     // Si searchQuery est un événement ou undefined, utiliser query
-    const queryToSearch = typeof searchQuery === 'string' ? searchQuery : query;
+    const rawInput  = typeof searchQuery === 'string' ? searchQuery : query;
+    const queryToSearch = normalizeYouTubeInput(rawInput);
 
     if (!queryToSearch.trim()) return;
 
@@ -159,6 +191,11 @@ export default function YouTubeSearch({ onSelectVideo }) {
           placeholder="Coller un lien YouTube ou rechercher une vidéo..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => {
+            if (results.length > 0) {
+              setVisible(true);
+            }
+          }}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
       </div>
