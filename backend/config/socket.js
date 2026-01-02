@@ -6,6 +6,8 @@ const { initializeChatHandlers } = require("../services/chatService");
 const { initializePlaylistHandlers } = require('./handlers/playlistHandlers');
 const playlistService = require("../services/playlistService");
 const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
+const userPermissionsStore = require('../services/userPermissionsStore');
+
 
 
 /**
@@ -150,16 +152,26 @@ function initializeSocket(server, allowedOrigins) {
             anonymousUserStore.setUserRoom(currentUser.userId, roomId);
 
             // Récupérer les permissions par défaut de la room
+            let room = null;
             try {
-                const room = await roomModel.getRoomById(roomId, false);
+                room = await roomModel.getRoomById(roomId, false);
 
                 if (room) {
                     // Si c'est le créateur (admin), donner tous les droits
                     if (room.creatorId === currentUser.userId) {
                         anonymousUserStore.setUserAsAdmin(currentUser.userId);
                     } else {
-                        // Sinon, appliquer les permissions par défaut de la room
-                        anonymousUserStore.setUserDefaultPermissions(currentUser.userId, room.defaultPermissions);
+                        // Vérifier si l'utilisateur a des permissions personnalisées sauvegardées
+                        const savedPermissions = userPermissionsStore.getUserPermissions(roomId, currentUser.userId);
+
+                        if (savedPermissions) {
+                            // Utiliser les permissions sauvegardées
+                            anonymousUserStore.updateUserPermissions(currentUser.userId, savedPermissions);
+                            debugLog(`Permissions restaurées pour ${currentUser.username} depuis la sauvegarde`);
+                        } else {
+                            // Sinon, appliquer les permissions par défaut de la room
+                            anonymousUserStore.resetUserToDefaultPermissions(currentUser.userId, room.defaultPermissions);
+                        }
                     }
                 }
             } catch (error) {
@@ -179,7 +191,8 @@ function initializeSocket(server, allowedOrigins) {
                 user: {
                     userId: currentUser?.userId,
                     username: currentUser?.username,
-                    permissionsSet: currentUser?.permissionsSet
+                    permissionsSet: currentUser?.permissionsSet,
+                    isAdmin: room?.creatorId === currentUser?.userId
                 }
             });
 
@@ -199,7 +212,9 @@ function initializeSocket(server, allowedOrigins) {
         socket.on('leave-room', async (roomId) => {
             anonymousUserStore.updateActivity(socket.id);
             const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-
+            if (currentUser && roomId) {
+                userPermissionsStore.removeUserPermissions(roomId, currentUser.userId);
+            }
             socket.leave(roomId);
 
             // Décrémenter le compteur d'utilisateurs de la room

@@ -245,8 +245,11 @@ function initializePlaylistHandlers(io, socket) {
             }
 
             // Vérifier la permission interactionVideo
-            if (!user.permissionsSet.interactionVideo) {
-                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo' });
+            if (!user?.permissionsSet?.interactionVideo) {
+                socket.emit('permissions-error', {
+                    error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo'
+                });
+                debugLog(`${user?.username} a tenté de play sans permission`);
                 return;
             }
 
@@ -276,8 +279,11 @@ function initializePlaylistHandlers(io, socket) {
             }
 
             // Vérifier la permission interactionVideo
-            if (!user.permissionsSet.interactionVideo) {
-                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo' });
+            if (!user?.permissionsSet?.interactionVideo) {
+                socket.emit('permissions-error', {
+                    error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo'
+                });
+                debugLog(`${user?.username} a tenté de pause sans permission`);
                 return;
             }
 
@@ -307,8 +313,11 @@ function initializePlaylistHandlers(io, socket) {
             }
 
             // Vérifier la permission interactionVideo
-            if (!user.permissionsSet.interactionVideo) {
-                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo' });
+            if (!user?.permissionsSet?.interactionVideo) {
+                socket.emit('permissions-error', {
+                    error: 'Permission refusée: vous n\'avez pas le droit d\'interagir avec la vidéo'
+                });
+                debugLog(`${user?.username} a tenté de seek sans permission`);
                 return;
             }
 

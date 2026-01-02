@@ -2,6 +2,8 @@ const roomModel = require('../../model/roomModel');
 const anonymousUserStore = require('../../services/anonymousUserStore');
 const permissionsService = require('../../services/permissionsService');
 const { debugLog } = require('../../utils/utils');
+const userPermissionsStore = require('../../services/userPermissionsStore');
+
 
 /**
  * Initialise les handlers WebSocket pour la gestion des permissions
@@ -26,10 +28,11 @@ function initializePermissionsHandlers(io, socket) {
                 return;
             }
 
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
             socket.emit('room-permissions', {
                 roomId,
                 defaultPermissions: room.defaultPermissions,
-                isAdmin: room.creatorId === anonymousUserStore.getUserBySocketId(socket.id)?.userId
+                isAdmin: room.creatorId === user?.userId
             });
         } catch (error) {
             debugLog(`Erreur lors de la récupération des permissions: ${error}`);
@@ -65,6 +68,71 @@ function initializePermissionsHandlers(io, socket) {
             });
         } catch (error) {
             debugLog(`Erreur lors de la mise à jour des permissions: ${error}`);
+            socket.emit('permissions-error', { error: error.message });
+        }
+    });
+
+    /**
+     * UPDATE-USER-PERMISSIONS
+     * Met à jour les permissions d'un utilisateur spécifique
+     * Vérifie que l'utilisateur qui modifie a la permission editPermissions
+     */
+    socket.on('update-user-permissions', async (data) => {
+        try {
+            const { roomId, targetUserId, permissions } = data;
+            const modifierUser = anonymousUserStore.getUserBySocketId(socket.id);
+            const targetUser = anonymousUserStore.getUserById(targetUserId);
+
+            if (!roomId || !targetUserId || !permissions) {
+                socket.emit('permissions-error', { error: 'Room ID, target user ID and permissions are required' });
+                return;
+            }
+
+            if (!targetUser) {
+                socket.emit('permissions-error', { error: 'Target user not found' });
+                return;
+            }
+
+            // Vérifier que le modifieur a la permission editPermissions
+            if (!modifierUser?.permissionsSet?.editPermissions) {
+                socket.emit('permissions-error', { error: 'Permission denied: you do not have editPermissions' });
+                return;
+            }
+
+            // Vérifier que le modifieur ne peut modifier que les permissions qu'il possède
+            const validatedPermissions = {};
+            for (const [key, value] of Object.entries(permissions)) {
+                if (modifierUser.permissionsSet[key] === true) {
+                    validatedPermissions[key] = value;
+                } else {
+                    // Garder la permission actuelle si le modifieur ne la possède pas
+                    validatedPermissions[key] = targetUser.permissionsSet[key];
+                }
+            }
+
+            // Mettre à jour les permissions de l'utilisateur
+            anonymousUserStore.updateUserPermissions(targetUserId, validatedPermissions);
+
+            // 🔑 IMPORTANT: Sauvegarder les permissions dans le store persistant
+            userPermissionsStore.setUserPermissions(roomId, targetUserId, validatedPermissions);
+
+
+            debugLog(`Permissions de ${targetUser.username} mises à jour par ${modifierUser.username}`);
+            debugLog(`Permissions sauvegardées pour room ${roomId}, user ${targetUserId}`);
+
+            // Broadcast la mise à jour à tous les utilisateurs de la room
+            io.to(roomId).emit('user-permissions-updated', {
+                userId: targetUserId,
+                username: targetUser.username,
+                permissions: validatedPermissions,
+                updatedBy: modifierUser.username
+            });
+
+            socket.emit('update-user-permissions-success', {
+                message: 'User permissions updated successfully'
+            });
+        } catch (error) {
+            debugLog(`Erreur lors de la mise à jour des permissions utilisateur: ${error}`);
             socket.emit('permissions-error', { error: error.message });
         }
     });

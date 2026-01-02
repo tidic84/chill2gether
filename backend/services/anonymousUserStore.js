@@ -41,7 +41,9 @@ class AnonymousUserStore {
                 deleteMessages: false,
                 changeVideo: true,
                 interactionVideo: true
-            }
+            },
+            customPermissions: null
+
         };
 
         this.users.set(userId, user);
@@ -253,7 +255,9 @@ class AnonymousUserStore {
                 usersInRoom.push({
                     userId: user.userId,
                     username: user.username,
-                    connectedAt: user.connectedAt
+                    connectedAt: user.connectedAt,
+                    permissionsSet: user.permissionsSet,
+                    socketId: user.socketId
                 });
             }
         }
@@ -277,6 +281,9 @@ class AnonymousUserStore {
         const user = this.users.get(userId);
         if (user) {
             user.permissionsSet = { ...user.permissionsSet, ...permissions };
+            // Tracker que ces permissions sont custom (différentes des défauts)
+            user.customPermissions = { ...permissions };
+            debugLog(`Permissions mises à jour pour ${userId}:`, permissions);
             return true;
         }
         return false;

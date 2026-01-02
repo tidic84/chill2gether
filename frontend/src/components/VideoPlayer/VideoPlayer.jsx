@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useSocket } from "../../contexts/SocketContext";
 import { useParams } from "react-router-dom";
+import { usePermissions } from "../../contexts/SocketContext";
 
 /**
  * Extrait l'ID YouTube de différents formats d'URL
@@ -8,7 +9,6 @@ import { useParams } from "react-router-dom";
 function extractYouTubeID(url) {
     if (!url) return null;
 
-    // S'assurer que url est une string
     if (typeof url !== 'string') {
         console.warn('extractYouTubeID: url doit être une string, reçu:', typeof url, url);
         return null;
@@ -36,6 +36,10 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
     const loadedVideoIdRef = useRef(null);
     const socket = useSocket();
     const { roomId } = useParams();
+    const permissions = usePermissions();
+
+    // Vérifier la permission d'interaction
+    const canInteractVideo = permissions?.interactionVideo !== false;
 
     const [isReady, setIsReady] = useState(false);
     const isLocalActionRef = useRef(false);
@@ -62,12 +66,10 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
     // Créer le player UNE SEULE FOIS au premier videoId
     useEffect(() => {
-        // Pas de vidéo = attendre
         if (!videoId) {
             return;
         }
 
-        // Player déjà créé = ne rien faire
         if (playerRef.current) {
             return;
         }
@@ -85,7 +87,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
             }
 
             console.log("Création du player avec vidéo:", videoId);
-            ignoreNextPlayRef.current = true; //Ignorer le premier play automatique
+            ignoreNextPlayRef.current = true;
 
             try {
                 playerRef.current = new window.YT.Player('youtube-player', {
@@ -94,10 +96,10 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                     height: '100%',
                     playerVars: {
                         autoplay: autoplay ? 1 : 0,
-                        controls: 1,
+                        controls: canInteractVideo ? 1 : 0, // Désactiver les contrôles si pas de permission
                         modestbranding: 1,
                         rel: 0,
-                        fs: 1,
+                        fs: canInteractVideo ? 1 : 0, // Désactiver fullscreen si pas de permission
                         iv_load_policy: 3
                     },
                     events: {
@@ -122,6 +124,12 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                                 if (onEndedRef.current) {
                                     onEndedRef.current();
                                 }
+                            }
+
+                            // Bloquer les actions locales si pas de permission
+                            if (!canInteractVideo) {
+                                console.log("Interaction bloquée - pas de permission");
+                                return;
                             }
 
                             //Ignorer le premier play automatique
@@ -163,7 +171,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         };
 
         initPlayer();
-    }, [videoId, autoplay, roomId, socket]); // Se déclenche quand videoId change, mais ne crée qu'une fois
+    }, [videoId, autoplay, roomId, socket, canInteractVideo]); // Se déclenche quand videoId change, mais ne crée qu'une fois
 
     // Cleanup au démontage du composant
     useEffect(() => {
@@ -184,7 +192,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         };
     }, []); // Dépendances vides = cleanup seulement au démontage
 
-    //Écouter la réponse de synchronisation
+    // Écouter la réponse de synchronisation
     useEffect(() => {
         if (!socket) return;
 
@@ -270,6 +278,12 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
     useEffect(() => {
         if (!socket) return;
 
+        // Bloquer les sync si pas de permission
+        if (!canInteractVideo) {
+            console.log("Interactions vidéo bloquées");
+            return;
+        }
+
         const handlePlaySync = ({ time }) => {
             if (playerRef.current && playerRef.current.playVideo) {
                 console.log("Sync play reçu:", time);
@@ -314,7 +328,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
             socket.off("video-pause-sync", handlePauseSync);
             socket.off("video-seek-sync", handleSeekSync);
         };
-    }, [socket, roomId]);
+    }, [socket, canInteractVideo]);
 
     return (
         <div className="w-full h-full bg-black relative">
@@ -360,6 +374,12 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                     className="w-full h-full"
                 />
             </div>
+
+            {/* Overlay de blocage si pas de permission */}
+            {url && videoId && !canInteractVideo && (
+                <div className="absolute inset-0 z-40 bg-black/0 flex items-center justify-center cursor-not-allowed">
+                </div>
+            )}
         </div>
     );
 }
