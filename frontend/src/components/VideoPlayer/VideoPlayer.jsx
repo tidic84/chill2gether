@@ -7,20 +7,26 @@ import { useParams } from "react-router-dom";
  */
 function extractYouTubeID(url) {
     if (!url) return null;
-    
+
+    // S'assurer que url est une string
+    if (typeof url !== 'string') {
+        console.warn('extractYouTubeID: url doit être une string, reçu:', typeof url, url);
+        return null;
+    }
+
     if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
         return url;
     }
-    
+
     const match1 = url.match(/[?&]v=([^&]+)/);
     if (match1) return match1[1];
-    
+
     const match2 = url.match(/youtu\.be\/([^?]+)/);
     if (match2) return match2[1];
-    
+
     const match3 = url.match(/embed\/([^?]+)/);
     if (match3) return match3[1];
-    
+
     return null;
 }
 
@@ -30,12 +36,14 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
     const loadedVideoIdRef = useRef(null);
     const socket = useSocket();
     const { roomId } = useParams();
-    
+
     const [isReady, setIsReady] = useState(false);
     const isLocalActionRef = useRef(false);
     const onEndedRef = useRef(onEnded);
-    
+
+    console.log('🎬 VideoPlayer reçoit url:', url, 'type:', typeof url);
     const videoId = extractYouTubeID(url);
+    console.log('🆔 VideoId extrait:', videoId);
 
     // Mettre à jour la ref onEnded
     useEffect(() => {
