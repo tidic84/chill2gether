@@ -14,7 +14,7 @@ export default function Header({ roomCode }) {
     };
 
     return (
-        <header className="relative top-0 z-50 bg-white/90 backdrop-blur-md border-b border-zen-warm-stone px-6 py-4 shadow-sm">
+        <header className="relative top-0 z-50 bg-white/90 backdrop-blur-md border-b border-zen-border px-6 py-4 shadow-sm">
             <div className="max-w-[1600px] mx-auto flex justify-between items-center">
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
@@ -30,16 +30,16 @@ export default function Header({ roomCode }) {
                 {roomCode && (
                     <div
                         onClick={handleCopyCode}
-                        className="flex items-center gap-4 bg-zen-light-cream border border-zen-warm-stone pl-5 pr-2 py-1 rounded-full shadow-sm hover:shadow-md hover:border-zen-sage/30 transition-all cursor-pointer group"
+                        className="flex items-center gap-4 bg-zen-surface border border-zen-border pl-5 pr-2 py-1 rounded-full shadow-sm hover:shadow-md hover:border-zen-sage/30 transition-all cursor-pointer group"
                     >
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-zen-sage animate-pulse"></div>
-                            <span className="text-sm font-bold text-zen-medium-stone tracking-wide">
+                            <span className="text-sm font-bold text-zen-stone tracking-wide">
                                 {roomCode}
                             </span>
                         </div>
-                        <div className="h-4 w-px bg-zen-warm-stone"></div>
-                        <div className="w-8 h-8 rounded-full bg-white border border-zen-warm-stone flex items-center justify-center text-zen-stone group-hover:text-zen-sage group-hover:border-zen-sage/50 transition-all">
+                        <div className="h-4 w-px bg-zen-border"></div>
+                        <div className="w-8 h-8 rounded-full bg-white border border-zen-border flex items-center justify-center text-zen-stone group-hover:text-zen-sage group-hover:border-zen-sage/50 transition-all">
                             {copied ? (
                                 <span className="text-xs font-bold">✓</span>
                             ) : (

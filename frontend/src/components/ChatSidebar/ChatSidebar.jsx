@@ -19,13 +19,13 @@ export default function ChatSidebar({ chat, playlist, history }) {
     return (
         <div className="relative w-full h-full bg-white overflow-hidden flex flex-col">
             {/* Header with Toggle Buttons */}
-            <div className="flex p-1 m-3 bg-zen-cream rounded-xl border border-zen-warm-stone">
+            <div className="flex p-1 m-3 bg-zen-bg rounded-xl border border-zen-border">
                 <button
                     onClick={() => setActiveOverlay((prev) => (prev === "playlist" ? null : "playlist"))}
                     className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide rounded-lg transition-all ${
                         activeOverlay === "playlist"
                             ? "bg-white text-zen-sage shadow-sm"
-                            : "text-zen-stone hover:text-zen-dark-stone"
+                            : "text-zen-stone hover:text-zen-stone"
                     }`}
                 >
                     Playlist
@@ -35,7 +35,7 @@ export default function ChatSidebar({ chat, playlist, history }) {
                     className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide rounded-lg transition-all ${
                         activeOverlay === "history"
                             ? "bg-white text-zen-sage shadow-sm"
-                            : "text-zen-stone hover:text-zen-dark-stone"
+                            : "text-zen-stone hover:text-zen-stone"
                     }`}
                 >
                     Historique
@@ -45,13 +45,13 @@ export default function ChatSidebar({ chat, playlist, history }) {
             {/* Contenu principal */}
             <div className="flex-1 relative overflow-hidden">
                 {/* Overlay (playlist ou history) */}
-                <div className={`absolute top-0 left-0 w-full bg-zen-light-cream border-b border-zen-warm-stone flex flex-col transition-all duration-200 ease-in-out z-10 ${
+                <div className={`absolute top-0 left-0 w-full bg-zen-surface border-b border-zen-border flex flex-col transition-all duration-200 ease-in-out z-10 ${
                     activeOverlay ? "h-[40%] opacity-100" : "h-0 opacity-0 pointer-events-none"
                 }`}>
                     <div className="p-2 flex justify-end">
                         <button
                             onClick={() => setActiveOverlay(null)}
-                            className="p-1 text-zen-stone hover:text-zen-dark-stone hover:bg-zen-warm-stone rounded-md transition-colors"
+                            className="p-1 text-zen-stone hover:text-zen-stone hover:bg-zen-border rounded-md transition-colors"
                         >
                             <X size={14} />
                         </button>

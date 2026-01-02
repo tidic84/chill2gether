@@ -63,7 +63,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                                         className={`w-24 h-16 rounded-lg flex items-center justify-center text-xs font-bold ${
                                             index === currentIndex
                                                 ? "bg-zen-sage text-white"
-                                                : "bg-zen-warm-stone text-zen-dark-stone"
+                                                : "bg-zen-border text-zen-stone"
                                         }`}
                                     >
                                         {index + 1}
@@ -75,7 +75,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                             <div className="flex-1 min-w-0">
                                 <p
                                     className={`text-sm font-semibold truncate ${
-                                        index === currentIndex ? "text-zen-sage" : "text-zen-medium-stone"
+                                        index === currentIndex ? "text-zen-sage" : "text-zen-stone"
                                     }`}
                                 >
                                     {video.title}
@@ -88,7 +88,7 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                             {/* Delete Button */}
                             <button
                                 onClick={(e) => handleDeleteVideo(video.id, e)}
-                                className="opacity-0 group-hover:opacity-100 p-1 text-zen-stone hover:text-zen-terracotta rounded transition-all"
+                                className="opacity-0 group-hover:opacity-100 p-1 text-zen-stone hover:text-zen-clay rounded transition-all"
                             >
                                 <X size={16} />
                             </button>
