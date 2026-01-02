@@ -17,15 +17,15 @@ export default function ChatSidebar({ chat, playlist, history }) {
     const overlayContent = activeOverlay || lastActiveOverlay.current;
 
     return (
-        <div className="relative w-full h-full bg-white overflow-hidden flex flex-col">
+        <div className="relative w-full h-full bg-white dark:bg-zen-dark-surface overflow-hidden flex flex-col">
             {/* Header with Toggle Buttons */}
-            <div className="flex p-1 m-3 bg-zen-bg rounded-xl border border-zen-border">
+            <div className="flex p-1 m-3 bg-zen-bg dark:bg-zen-dark-bg rounded-xl border border-zen-border dark:border-zen-dark-border">
                 <button
                     onClick={() => setActiveOverlay((prev) => (prev === "playlist" ? null : "playlist"))}
                     className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide rounded-lg transition-all ${
                         activeOverlay === "playlist"
-                            ? "bg-white text-zen-sage shadow-sm"
-                            : "text-zen-stone hover:text-zen-stone"
+                            ? "bg-white dark:bg-zen-dark-surface text-zen-sage dark:text-zen-dark-sage shadow-sm"
+                            : "text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:hover:text-zen-dark-stone"
                     }`}
                 >
                     Playlist
@@ -34,8 +34,8 @@ export default function ChatSidebar({ chat, playlist, history }) {
                     onClick={() => setActiveOverlay((prev) => (prev === "history" ? null : "history"))}
                     className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide rounded-lg transition-all ${
                         activeOverlay === "history"
-                            ? "bg-white text-zen-sage shadow-sm"
-                            : "text-zen-stone hover:text-zen-stone"
+                            ? "bg-white dark:bg-zen-dark-surface text-zen-sage dark:text-zen-dark-sage shadow-sm"
+                            : "text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:hover:text-zen-dark-stone"
                     }`}
                 >
                     Historique
@@ -45,13 +45,13 @@ export default function ChatSidebar({ chat, playlist, history }) {
             {/* Contenu principal */}
             <div className="flex-1 relative overflow-hidden">
                 {/* Overlay (playlist ou history) */}
-                <div className={`absolute top-0 left-0 w-full bg-zen-surface border-b border-zen-border flex flex-col transition-all duration-200 ease-in-out z-10 ${
+                <div className={`absolute top-0 left-0 w-full bg-zen-surface dark:bg-zen-dark-surface border-b border-zen-border dark:border-zen-dark-border flex flex-col transition-all duration-200 ease-in-out z-10 ${
                     activeOverlay ? "h-[40%] opacity-100" : "h-0 opacity-0 pointer-events-none"
                 }`}>
                     <div className="p-2 flex justify-end">
                         <button
                             onClick={() => setActiveOverlay(null)}
-                            className="p-1 text-zen-stone hover:text-zen-stone hover:bg-zen-border rounded-md transition-colors"
+                            className="p-1 text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:text-zen-dark-stone hover:bg-zen-border rounded-md transition-colors"
                         >
                             <X size={14} />
                         </button>
