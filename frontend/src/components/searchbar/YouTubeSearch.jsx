@@ -7,6 +7,33 @@ const decodeHTMLEntities = (text) => {
   textarea.innerHTML = text;
   return textarea.value;
 };
+// YoutubeSearch.js
+export const normalizeYouTubeInput = (input) => {
+  try {
+    // Si ce n'est pas une URL, on renvoie le texte tel quel
+    if (!input.startsWith("http")) return input;
+
+    const url = new URL(input);
+
+    // youtu.be/VIDEO_ID
+    if (url.hostname === "youtu.be") {
+      const videoId = url.pathname.slice(1); // enlève le "/"
+      if (videoId) return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+
+    // youtube.com/watch?v=VIDEO_ID
+    if (url.hostname === "www.youtube.com" || url.hostname === "youtube.com") {
+      const videoId = url.searchParams.get("v");
+      if (videoId) return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+
+    // URL d'un autre site → on renvoie tel quel
+    return input;
+  } catch {
+    // URL mal formée → on renvoie l'input brut
+    return input;
+  }
+};
 
 export default function YouTubeSearch({ onSelectVideo }) {
   const [query, setQuery] = useState("");
@@ -20,35 +47,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
   const containerRef = useRef(null);
   const isSearchingRef = useRef(false);
 
-const normalizeYouTubeInput = (input) => {
-  try {
-    // Cas URL
-    if (input.startsWith("http")) {
-      const url = new URL(input);
-
-      // youtu.be/VIDEO_ID
-      if (url.hostname.includes("youtu.be")) {
-        const videoId = url.pathname.slice(1);
-        return `https://www.youtube.com/watch?v=${videoId}`;
-      }
-
-      // youtube.com/watch?v=VIDEO_ID
-      if (url.hostname.includes("youtube.com")) {
-        const videoId = url.searchParams.get("v");
-        if (videoId) {
-          return `https://www.youtube.com/watch?v=${videoId}`;
-        }
-      }
-    }
-
-    // Sinon, recherche classique (texte)
-    return input;
-  } catch {
-    // Si l’URL est mal formée → on traite comme une recherche
-    return input;
-  }
-};
-
+  
 
 
   // Fonction optimisée pour récupérer les suggestions
