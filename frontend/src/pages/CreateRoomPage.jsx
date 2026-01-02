@@ -103,7 +103,7 @@ export default function CreateRoomPage() {
 
                 <Link
                     to="/"
-                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted dark:text-zen-dark-muted hover:text-zen-sage dark:hover:text-zen-dark-sage dark:text-zen-dark-sage transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted dark:text-zen-dark-muted hover:text-zen-sage dark:hover:text-zen-dark-sage transition-colors"
                 >
                     <i className="fa-solid fa-arrow-left"></i>
                     <span className="hidden md:inline">Retour</span>

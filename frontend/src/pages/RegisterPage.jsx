@@ -97,7 +97,7 @@ export default function RegisterPage() {
 
                 <Link
                     to="/"
-                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted dark:text-zen-dark-muted hover:text-zen-sage dark:hover:text-zen-dark-sage dark:text-zen-dark-sage transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted dark:text-zen-dark-muted hover:text-zen-sage dark:hover:text-zen-dark-sage transition-colors"
                 >
                     <i className="fa-solid fa-arrow-left"></i>
                     <span className="hidden md:inline">Retour</span>
@@ -171,7 +171,7 @@ export default function RegisterPage() {
                                     value={form.password}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-xl text-zen-text dark:text-zen-dark-text placeholder:text-zen-muted dark:text-zen-dark-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"
+                                    className="w-full px-4 py-3 bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-xl text-zen-text dark:text-zen-dark-text placeholder:text-zen-muted dark:placeholder:text-zen-dark-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"
                                     placeholder="••••••••"
                                 />
                                 <i className="fa-solid fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-zen-muted dark:text-zen-dark-muted"></i>
@@ -180,7 +180,7 @@ export default function RegisterPage() {
 
                         {/* Confirmation Mot de passe */}
                         <div className="space-y-2">
-                            <label htmlFor="confirm" className="block text-sm font-bold text-zen-text">
+                            <label htmlFor="confirm" className="block text-sm font-bold text-zen-text dark:text-zen-dark-text">
                               Confirmation
                             </label>
                             <div className="relative">
@@ -190,10 +190,10 @@ export default function RegisterPage() {
                                     value={form.confirm}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 bg-zen-surface border border-zen-border rounded-xl text-zen-text placeholder:text-zen-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"
+                                    className="w-full px-4 py-3 bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-xl text-zen-text dark:text-zen-dark-text placeholder:text-zen-muted dark:placeholder:text-zen-dark-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"
                                     placeholder="••••••••"
                                 />
-                                <i className="fa-solid fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-zen-muted"></i>
+                                <i className="fa-solid fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-zen-muted dark:text-zen-dark-muted"></i>
                             </div>
                         </div>
 
