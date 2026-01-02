@@ -191,6 +191,11 @@ const normalizeYouTubeInput = (input) => {
           placeholder="Coller un lien YouTube ou rechercher une vidéo..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => {
+            if (results.length > 0) {
+              setVisible(true);
+            }
+          }}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
       </div>
