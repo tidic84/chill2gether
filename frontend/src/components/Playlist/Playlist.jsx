@@ -33,8 +33,8 @@ export default function Playlist({ videos, currentIndex, roomId, onPlayVideo }) 
                             onClick={() => handleSelectVideo(index)}
                             className={`relative flex gap-3 items-center p-2 rounded-lg transition-all group cursor-pointer ${
                                 index === currentIndex
-                                    ? "bg-zen-sage dark:bg-zen-dark-sage/20 shadow-sm"
-                                    : "bg-zen-sage dark:bg-zen-dark-sage/10 hover:shadow-sm"
+                                    ? "bg-zen-sage/20 dark:bg-zen-dark-sage/20 shadow-sm"
+                                    : "bg-zen-sage/10 dark:bg-zen-dark-sage/10 hover:shadow-sm"
                             }`}
                         >
                             {/* Thumbnail avec Index Badge */}

@@ -1,10 +1,12 @@
 import { Coffee, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
 export default function Header({ roomCode }) {
     const [copied, setCopied] = useState(false);
+    const { isAuthenticated, user } = useAuth();
 
     const handleCopyCode = () => {
         if (roomCode) {
@@ -19,7 +21,7 @@ export default function Header({ roomCode }) {
             <div className="max-w-[1600px] mx-auto flex justify-between items-center">
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-zen-bg dark:text-zen-dark-bg shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-mug-hot text-lg"></i>
                     </div>
                     <h1 className="text-xl font-bold tracking-tight text-zen-text dark:text-zen-dark-text">
@@ -27,7 +29,7 @@ export default function Header({ roomCode }) {
                     </h1>
                 </Link>
 
-                {/* Room Code & Theme Toggle */}
+                {/* Room Code, Profile & Theme Toggle */}
                 <div className="flex items-center gap-4">
                     {roomCode && (
                         <div
@@ -50,6 +52,18 @@ export default function Header({ roomCode }) {
                             </div>
                         </div>
                     )}
+
+                    {/* Profile Link - Only show if authenticated */}
+                    {isAuthenticated && (
+                        <Link
+                            to="/profile"
+                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border text-zen-stone dark:text-zen-dark-stone hover:text-zen-sage dark:hover:text-zen-dark-sage hover:border-zen-sage/50 dark:hover:border-zen-dark-sage/50 transition-all"
+                        >
+                            <i className="fa-solid fa-user text-sm"></i>
+                            <span className="text-sm font-bold hidden md:inline">{user?.username || user?.email}</span>
+                        </Link>
+                    )}
+
                     <ThemeToggle />
                 </div>
             </div>

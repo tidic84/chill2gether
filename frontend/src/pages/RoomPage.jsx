@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { roomApi } from "../services/api";
 import { useSocket } from "../contexts/SocketContext";
+import { useAuth } from "../contexts/AuthContext";
 import MainLayout from "../components/Layout/MainLayout";
 import Header from "../components/Header/Header";
 import VideoPlayer from "../components/VideoPlayer/VideoPlayer";
@@ -15,6 +16,7 @@ import GridMotion from "../components/GridMotion/GridMotion";
 export default function RoomPage() {
     const { roomId } = useParams();
     const socket = useSocket();
+    const { isAuthenticated, user } = useAuth();
 
     const [roomState, setRoomState] = useState('loading');
     const [roomData, setRoomData] = useState(null);
@@ -59,7 +61,12 @@ export default function RoomPage() {
 
     // Rejoindre la room via Socket.IO
     const joinSocketRoom = () => {
-        socket.emit('join-room', roomId);
+        // Si l'utilisateur est connecté, on envoie son username
+        if (isAuthenticated && user?.username) {
+            socket.emit('join-room', { roomId, username: user.username });
+        } else {
+            socket.emit('join-room', roomId);
+        }
         socket.emit('get-playlist', roomId);
         socket.emit('get-history', roomId);
     };
@@ -69,7 +76,8 @@ export default function RoomPage() {
         const handleUserRegistered = (data) => {
             setCurrentUsername(data.username);
 
-            if (data.username.startsWith("User")) {
+            // Ne pas afficher la popup si l'utilisateur est connecté
+            if (data.username.startsWith("User") && !isAuthenticated) {
                 setShowUsernamePopup(true);
             }
         };
@@ -79,7 +87,7 @@ export default function RoomPage() {
         return () => {
             socket.off('user-registered', handleUserRegistered);
         };
-    }, [socket]);
+    }, [socket, isAuthenticated]);
 
     // Écouter l'événement room-joined pour vérifier le pseudo
     useEffect(() => {
@@ -87,7 +95,8 @@ export default function RoomPage() {
             if (data.user && data.user.username) {
                 setCurrentUsername(data.user.username);
 
-                if (data.user.username.startsWith("User")) {
+                // Ne pas afficher la popup si l'utilisateur est connecté
+                if (data.user.username.startsWith("User") && !isAuthenticated) {
                     setShowUsernamePopup(true);
                 }
             }
@@ -98,7 +107,7 @@ export default function RoomPage() {
         return () => {
             socket.off('room-joined', handleRoomJoined);
         };
-    }, [socket]);
+    }, [socket, isAuthenticated]);
 
     // Écouter la confirmation de changement de username
     useEffect(() => {

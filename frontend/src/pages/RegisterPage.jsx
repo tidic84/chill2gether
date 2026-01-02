@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const baseUrl = import.meta.env.VITE_BASE_URL;
+const baseUrl = import.meta.env.VITE_BACKEND_URL;
 
 export default function RegisterPage() {
     const navigate = useNavigate();
@@ -9,6 +9,7 @@ export default function RegisterPage() {
         nom: "",
         email: "",
         password: "",
+        confirm: "",
     });
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -20,9 +21,13 @@ export default function RegisterPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!form.nom.trim() || !form.email.trim() || !form.password.trim()) {
+        if (!form.nom.trim() || !form.email.trim() || !form.password.trim() || !form.confirm.trim()) {
             setErrorMessage("Veuillez remplir tous les champs.");
             return;
+        }
+        if (form.password != form.confirm) {
+          setErrorMessage("Les deux mot de passes doivent être identique.");
+          return;
         }
 
         try {
@@ -33,7 +38,7 @@ export default function RegisterPage() {
             const response = await fetch(`${baseUrl}/api/users/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+              body: JSON.stringify({ email: form.email, username: form.nom, password: form.password}),
             });
 
             const data = await response.json();
@@ -63,7 +68,7 @@ export default function RegisterPage() {
             // 3️⃣ Sauvegarde du token + redirection
             if (loginData.token) {
                 localStorage.setItem("token", loginData.token);
-                navigate("/dashboard");
+                navigate("/profile");
             }
         } catch (error) {
             console.error("Erreur lors de l'inscription/connexion :", error);
@@ -82,7 +87,7 @@ export default function RegisterPage() {
             {/* Navbar */}
             <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent">
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-zen-bg shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-mug-hot text-lg"></i>
                     </div>
                     <h1 className="text-xl font-bold tracking-tight text-zen-text dark:text-zen-dark-text">
@@ -92,7 +97,7 @@ export default function RegisterPage() {
 
                 <Link
                     to="/"
-                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted dark:text-zen-dark-muted hover:text-zen-sage dark:hover:text-zen-dark-sage dark:text-zen-dark-sage transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted dark:text-zen-dark-muted hover:text-zen-sage dark:hover:text-zen-dark-sage transition-colors"
                 >
                     <i className="fa-solid fa-arrow-left"></i>
                     <span className="hidden md:inline">Retour</span>
@@ -105,7 +110,7 @@ export default function RegisterPage() {
 
                     {/* Icon Header */}
                     <div className="flex justify-center mb-6">
-                        <div className="w-16 h-16 bg-zen-clay dark:bg-zen-dark-clay/10 rounded-2xl flex items-center justify-center">
+                        <div className="w-16 h-16 bg-zen-clay/10 dark:bg-zen-dark-clay/10 rounded-2xl flex items-center justify-center">
                             <i className="fa-solid fa-user-plus text-3xl text-zen-clay dark:text-zen-dark-clay"></i>
                         </div>
                     </div>
@@ -166,7 +171,26 @@ export default function RegisterPage() {
                                     value={form.password}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-xl text-zen-text dark:text-zen-dark-text placeholder:text-zen-muted dark:text-zen-dark-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"
+                                    className="w-full px-4 py-3 bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-xl text-zen-text dark:text-zen-dark-text placeholder:text-zen-muted dark:placeholder:text-zen-dark-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"
+                                    placeholder="••••••••"
+                                />
+                                <i className="fa-solid fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-zen-muted dark:text-zen-dark-muted"></i>
+                            </div>
+                        </div>
+
+                        {/* Confirmation Mot de passe */}
+                        <div className="space-y-2">
+                            <label htmlFor="confirm" className="block text-sm font-bold text-zen-text dark:text-zen-dark-text">
+                              Confirmation
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="confirm"
+                                    type="password"
+                                    value={form.confirm}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-xl text-zen-text dark:text-zen-dark-text placeholder:text-zen-muted dark:placeholder:text-zen-dark-muted/60 focus:outline-none focus:border-zen-clay focus:ring-2 focus:ring-zen-clay/20 transition-all"
                                     placeholder="••••••••"
                                 />
                                 <i className="fa-solid fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-zen-muted dark:text-zen-dark-muted"></i>
