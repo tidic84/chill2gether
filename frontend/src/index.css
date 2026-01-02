@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-zen-bg dark:bg-zen-dark-bg text-zen-text dark:text-zen-dark-text;
+    @apply bg-zen-bg dark:bg-zen-dark-bg text-zen-text dark:text-zen-dark-text overflow-hidden;
   }
 }
 
@@ -12,7 +12,7 @@
 .organic-shape {
   position: absolute;
   filter: blur(80px);
-  z-index: -1;
+  z-index: 0;
   opacity: 0.5;
 }
 
@@ -29,7 +29,7 @@
 
 .dark .shape-sage {
   background: #6B8A7A;
-  opacity: 0.08;
+  opacity: 0.15;
 }
 
 .shape-clay {
@@ -45,7 +45,7 @@
 
 .dark .shape-clay {
   background: #D4917A;
-  opacity: 0.08;
+  opacity: 0.15;
 }
 
 /* Input Rejoindre Style */
@@ -167,4 +167,3 @@
   opacity: 0.6;
   pointer-events: none;
 }
-

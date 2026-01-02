@@ -34,7 +34,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex flex-col h-screen selection:bg-zen-sage dark:bg-zen-dark-sage/20 selection:text-zen-sage dark:text-zen-dark-sage overflow-hidden bg-zen-bg dark:bg-zen-dark-bg">
+        <div className="flex flex-col h-screen selection:bg-zen-sage/20 selection:text-zen-sage dark:selection:bg-zen-dark-sage/20 dark:selection:text-zen-dark-sage overflow-hidden relative">
             {/* Background Ambiance */}
             <div className="organic-shape shape-sage"></div>
             <div className="organic-shape shape-clay"></div>
