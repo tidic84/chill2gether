@@ -133,8 +133,15 @@ export default function RoomPage() {
         const handlePlaylistUpdated = (data) => {
             console.log("Playlist updated:", data);
 
+            const previousLength = playlist.length;
             setPlaylist(data.videos);
             setCurrentVideoIndex(data.currentIndex);
+
+            // Lancer automatiquement seulement si c'est la première vidéo (playlist était vide)
+            if (previousLength === 0 && data.videos.length === 1 && shouldAutoplay) {
+                console.log('🎬 Première vidéo de la playlist, lecture automatique');
+                socket.emit('play-video', { roomId, videoIndex: 0 });
+            }
 
             // Toujours afficher la vidéo courante même si elle n'est pas en lecture
             if (data.videos.length > 0 && data.currentIndex >= 0) {
@@ -148,7 +155,7 @@ export default function RoomPage() {
         socket.on('playlist-updated', handlePlaylistUpdated);
 
         return () => socket.off('playlist-updated', handlePlaylistUpdated);
-    }, [socket]);
+    }, [socket, playlist.length, shouldAutoplay, roomId]);
 
     // Écouter les changements de vidéo (play-video et video-ended)
     useEffect(() => {
@@ -199,11 +206,13 @@ export default function RoomPage() {
 
     // Gérer la sélection d'une vidéo depuis la recherche YouTube
     const handleSelectVideo = (video) => {
+        console.log('📹 Sélection vidéo:', video);
         setShouldAutoplay(true); // Lancer automatiquement une nouvelle vidéo
         socket.emit('add-to-playlist', {
             roomId,
             video
         });
+        console.log('📤 Émission add-to-playlist vers le serveur');
     };
 
     // Gérer la fin de la vidéo

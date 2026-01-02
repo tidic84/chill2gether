@@ -7,20 +7,26 @@ import { useParams } from "react-router-dom";
  */
 function extractYouTubeID(url) {
     if (!url) return null;
-    
+
+    // S'assurer que url est une string
+    if (typeof url !== 'string') {
+        console.warn('extractYouTubeID: url doit être une string, reçu:', typeof url, url);
+        return null;
+    }
+
     if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
         return url;
     }
-    
+
     const match1 = url.match(/[?&]v=([^&]+)/);
     if (match1) return match1[1];
-    
+
     const match2 = url.match(/youtu\.be\/([^?]+)/);
     if (match2) return match2[1];
-    
+
     const match3 = url.match(/embed\/([^?]+)/);
     if (match3) return match3[1];
-    
+
     return null;
 }
 
@@ -30,13 +36,13 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
     const loadedVideoIdRef = useRef(null);
     const socket = useSocket();
     const { roomId } = useParams();
-    
+
     const [isReady, setIsReady] = useState(false);
     const isLocalActionRef = useRef(false);
     const onEndedRef = useRef(onEnded);
     const hasSyncedRef = useRef(false);
-    const ignoreNextPlayRef = useRef(false); 
-    
+    const ignoreNextPlayRef = useRef(false);
+
     const videoId = extractYouTubeID(url);
 
     // Mettre à jour la ref onEnded
@@ -54,10 +60,15 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         }
     }, []);
 
-    // Créer le player UNE SEULE FOIS au montage (SEULEMENT si on a un videoId)
+    // Créer le player UNE SEULE FOIS au premier videoId
     useEffect(() => {
-        // Ne pas créer le player s'il n'y a pas de vidéo
+        // Pas de vidéo = attendre
         if (!videoId) {
+            return;
+        }
+
+        // Player déjà créé = ne rien faire
+        if (playerRef.current) {
             return;
         }
 
@@ -67,27 +78,22 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                 return;
             }
 
-            // Ne créer qu'une seule fois
-            if (playerRef.current) {
-                return;
-            }
-
             const container = document.getElementById('youtube-player');
             if (!container) {
                 setTimeout(initPlayer, 500);
                 return;
             }
 
-            console.log("Création du player avec videoId:", videoId);
+            console.log("Création du player avec vidéo:", videoId);
             ignoreNextPlayRef.current = true; //Ignorer le premier play automatique
 
             try {
                 playerRef.current = new window.YT.Player('youtube-player', {
-                    videoId: videoId, // Charger la première vidéo à la création
+                    videoId: videoId,
                     width: '100%',
                     height: '100%',
                     playerVars: {
-                        autoplay: autoplay ? 1 : 0,  
+                        autoplay: autoplay ? 1 : 0,
                         controls: 1,
                         modestbranding: 1,
                         rel: 0,
@@ -96,11 +102,11 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                     },
                     events: {
                         onReady: (event) => {
-                            console.log("Player prêt avec vidéo:", videoId);
+                            console.log("Player prêt");
                             playerReadyRef.current = true;
                             loadedVideoIdRef.current = videoId;
                             setIsReady(true);
-                            
+
                             // Demander la sync au backend
                             if (!hasSyncedRef.current && roomId) {
                                 setTimeout(() => {
@@ -117,7 +123,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                                     onEndedRef.current();
                                 }
                             }
-                            
+
                             //Ignorer le premier play automatique
                             if (!isLocalActionRef.current) {
                                 if (event.data === 1) {
@@ -126,15 +132,15 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                                         ignoreNextPlayRef.current = false;
                                         return;
                                     }
-                                    
-                                    socket.emit("video-play", { 
-                                        roomId, 
-                                        time: event.target.getCurrentTime() 
+
+                                    socket.emit("video-play", {
+                                        roomId,
+                                        time: event.target.getCurrentTime()
                                     });
                                 } else if (event.data === 2) {
-                                    socket.emit("video-pause", { 
-                                        roomId, 
-                                        time: event.target.getCurrentTime() 
+                                    socket.emit("video-pause", {
+                                        roomId,
+                                        time: event.target.getCurrentTime()
                                     });
                                 }
                             }
@@ -157,23 +163,26 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         };
 
         initPlayer();
+    }, [videoId, autoplay, roomId, socket]); // Se déclenche quand videoId change, mais ne crée qu'une fois
 
-        // Cleanup seulement au démontage du composant
+    // Cleanup au démontage du composant
+    useEffect(() => {
         return () => {
             if (playerRef.current) {
                 try {
-                    console.log("Destruction du player");
+                    console.log("Destruction du player au démontage");
                     playerRef.current.destroy();
+                } catch (e) {
+                    console.warn("Erreur cleanup:", e);
+                } finally {
                     playerRef.current = null;
                     playerReadyRef.current = false;
                     loadedVideoIdRef.current = null;
                     hasSyncedRef.current = false;
-                } catch (e) {
-                    console.warn("Erreur cleanup:", e);
                 }
             }
         };
-    }, [videoId ? 'has-video' : 'no-video', socket, roomId, autoplay]);
+    }, []); // Dépendances vides = cleanup seulement au démontage
 
     //Écouter la réponse de synchronisation
     useEffect(() => {
@@ -198,7 +207,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                 
                 setTimeout(() => {
                     isLocalActionRef.current = false;
-                }, 500);
+                }, 100);
                 
                 hasSyncedRef.current = true;
             } else if (data.hasVideo && !data.isPlaying) {
@@ -214,9 +223,21 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         };
     }, [socket]);
 
-    // Charger une nouvelle vidéo quand videoId change (sans détruire le player)
+    // Charger une nouvelle vidéo quand videoId change
     useEffect(() => {
-        if (!videoId || !playerReadyRef.current || !playerRef.current) {
+        if (!playerReadyRef.current || !playerRef.current) {
+            return;
+        }
+
+        // Si pas de vidéo, stopper le player et le masquer
+        if (!videoId) {
+            console.log("Arrêt du player - playlist vide");
+            try {
+                playerRef.current.stopVideo();
+                loadedVideoIdRef.current = null;
+            } catch (error) {
+                console.warn("Erreur arrêt vidéo:", error);
+            }
             return;
         }
 
@@ -243,7 +264,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         } catch (error) {
             console.error("Erreur chargement vidéo:", error);
         }
-    }, [videoId, autoplay]); // Ajouter autoplay aux dépendances
+    }, [videoId, autoplay]); // Se déclenche à chaque changement de vidéo
 
     // Écouter les événements de synchronisation
     useEffect(() => {
@@ -251,33 +272,36 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
         const handlePlaySync = ({ time }) => {
             if (playerRef.current && playerRef.current.playVideo) {
+                console.log("Sync play reçu:", time);
                 isLocalActionRef.current = true;
                 playerRef.current.seekTo(time, true);
                 playerRef.current.playVideo();
                 setTimeout(() => {
                     isLocalActionRef.current = false;
-                }, 500);
+                }, 100);
             }
         };
 
         const handlePauseSync = ({ time }) => {
             if (playerRef.current && playerRef.current.pauseVideo) {
+                console.log("Sync pause reçu:", time);
                 isLocalActionRef.current = true;
                 playerRef.current.seekTo(time, true);
                 playerRef.current.pauseVideo();
                 setTimeout(() => {
                     isLocalActionRef.current = false;
-                }, 500);
+                }, 100);
             }
         };
 
         const handleSeekSync = ({ time }) => {
             if (playerRef.current && playerRef.current.seekTo) {
+                console.log("Sync seek reçu:", time);
                 isLocalActionRef.current = true;
                 playerRef.current.seekTo(time, true);
                 setTimeout(() => {
                     isLocalActionRef.current = false;
-                }, 500);
+                }, 100);
             }
         };
 
@@ -292,33 +316,32 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
         };
     }, [socket, roomId]);
 
-    if (!url) {
-        return (
-            <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white">
-                <div className="text-6xl mb-4"></div>
-                <p className="text-xl font-semibold">Aucune vidéo sélectionnée</p>
-                <p className="text-sm text-gray-400 mt-2">
-                    Recherchez une vidéo pour commencer
-                </p>
-            </div>
-        );
-    }
-
-    if (!videoId) {
-        return (
-            <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white">
-                <div className="text-6xl mb-4"></div>
-                <p className="text-xl font-semibold">URL YouTube invalide</p>
-                <p className="text-sm text-red-400 mt-2 px-4 text-center max-w-md">
-                    Impossible d'extraire l'ID de: {url}
-                </p>
-            </div>
-        );
-    }
-
     return (
         <div className="w-full h-full bg-black relative">
-            {!isReady && (
+            {/* Message quand aucune vidéo */}
+            {!url && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20">
+                    <div className="text-6xl mb-4"></div>
+                    <p className="text-xl font-semibold">Aucune vidéo sélectionnée</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                        Recherchez une vidéo pour commencer
+                    </p>
+                </div>
+            )}
+
+            {/* Message d'erreur si URL invalide */}
+            {url && !videoId && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20">
+                    <div className="text-6xl mb-4"></div>
+                    <p className="text-xl font-semibold">URL YouTube invalide</p>
+                    <p className="text-sm text-red-400 mt-2 px-4 text-center max-w-md">
+                        Impossible d'extraire l'ID de: {url}
+                    </p>
+                </div>
+            )}
+
+            {/* Loader pendant le chargement */}
+            {videoId && !isReady && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
@@ -326,18 +349,17 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                     </div>
                 </div>
             )}
-            
-            <div 
-                id="youtube-player" 
-                className="w-full h-full"
-                style={{ 
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%'
-                }}
-            />
+
+            {/* Player YouTube wrapper - gère la visibilité sans toucher au player */}
+            <div
+                className="absolute inset-0"
+                style={{ visibility: videoId ? 'visible' : 'hidden' }}
+            >
+                <div
+                    id="youtube-player"
+                    className="w-full h-full"
+                />
+            </div>
         </div>
     );
 }
