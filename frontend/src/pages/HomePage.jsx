@@ -7,6 +7,7 @@ import GridMotion from "../components/GridMotion/GridMotion";
 import { useSocket } from "../contexts/SocketContext";
 import { useAuth } from "../contexts/AuthContext";
 import { roomApi } from "../services/api";
+import ThemeToggle from "../components/ThemeToggle/ThemeToggle";
 
 export default function HomePage() {
     const [showTutorial, setShowTutorial] = useState(false);
@@ -113,7 +114,8 @@ export default function HomePage() {
                     </h1>
                 </Link>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
+                    <ThemeToggle />
                     {isAuthenticated ? (
                         <Link
                             to="/profile"
