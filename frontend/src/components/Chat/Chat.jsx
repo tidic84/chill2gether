@@ -2,13 +2,16 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Send, Smile } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
 import socket from "../../services/socket";
 
 export default function Chat() {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const textareaRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const emojiPickerRef = useRef(null);
     const { roomId } = useParams();
 
     function autoResize(textarea) {
@@ -30,6 +33,23 @@ export default function Chat() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+                setShowEmojiPicker(false);
+            }
+        };
+
+        if (showEmojiPicker) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [showEmojiPicker]);
 
     // Écoute les nouveaux messages
     useEffect(() => {
@@ -63,14 +83,20 @@ export default function Chat() {
         return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     };
 
+    // Handle emoji selection
+    const handleEmojiClick = (emojiData) => {
+        setInput((prev) => prev + emojiData.emoji);
+        setShowEmojiPicker(false);
+    };
+
     return (
         <div className="flex flex-col h-full bg-white relative">
             {/* Chat Header */}
-            <div className="p-3 flex justify-between items-center border-b border-zen-warm-stone">
+            <div className="p-3 flex justify-between items-center border-b border-zen-border">
                 <span className="text-xs font-bold text-zen-stone uppercase tracking-widest px-2">
                     Live Chat
                 </span>
-                <span className="text-xs bg-zen-cream text-zen-dark-stone px-2 py-0.5 rounded text-[10px] font-bold border border-zen-warm-stone">
+                <span className="text-xs bg-zen-bg text-zen-stone px-2 py-0.5 rounded text-[10px] font-bold border border-zen-border">
                     EN LIGNE
                 </span>
             </div>
@@ -82,7 +108,7 @@ export default function Chat() {
                     const isCurrentUser = false; // TODO: compare with actual current user
                     const colorClass = isCurrentUser
                         ? 'bg-zen-sage text-white'
-                        : 'bg-zen-cream text-zen-charcoal border border-zen-warm-stone';
+                        : 'bg-zen-bg text-zen-text border border-zen-border';
                     const roundedClass = isCurrentUser
                         ? 'rounded-2xl rounded-br-sm'
                         : 'rounded-2xl rounded-bl-sm';
@@ -112,20 +138,34 @@ export default function Chat() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white mt-auto border-t border-zen-warm-stone">
+            <div className="p-4 bg-white mt-auto border-t border-zen-border relative">
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                    <div
+                        ref={emojiPickerRef}
+                        className="absolute bottom-full right-4 mb-2 z-50"
+                    >
+                        <EmojiPicker
+                            onEmojiClick={handleEmojiClick}
+                            width={320}
+                            height={400}
+                        />
+                    </div>
+                )}
+
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
                         sendMessage();
                     }}
-                    className="flex gap-2 bg-zen-light-cream p-1.5 rounded-full border border-zen-warm-stone focus-within:border-zen-terracotta focus-within:ring-2 focus-within:ring-zen-terracotta/10 transition-all shadow-sm"
+                    className="flex gap-2 bg-zen-surface p-1.5 rounded-full border border-zen-border focus-within:border-zen-clay focus-within:ring-2 focus-within:ring-zen-clay/10 transition-all shadow-sm"
                 >
                     <input
                         ref={textareaRef}
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 text-zen-charcoal placeholder-zen-stone outline-none"
+                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 text-zen-text placeholder-zen-stone outline-none"
                         placeholder="Écrire un message..."
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
@@ -136,7 +176,12 @@ export default function Chat() {
                     />
                     <button
                         type="button"
-                        className="p-2 text-zen-stone hover:text-zen-terracotta rounded-full hover:bg-zen-cream transition-colors"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className={`p-2 rounded-full transition-colors ${
+                            showEmojiPicker
+                                ? 'text-zen-terracotta bg-zen-cream'
+                                : 'text-zen-stone hover:text-zen-terracotta hover:bg-zen-cream'
+                        }`}
                     >
                         <Smile size={20} />
                     </button>
