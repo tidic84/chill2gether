@@ -29,7 +29,7 @@ const getUserById = async (id) => {
 
 const updateUserField = async (userId, field, value) => {
     // On sécurise le champ pour éviter l'injection SQL
-    const allowedFields = ['email', 'password'];
+    const allowedFields = ['email', 'password', "username"];
     if (!allowedFields.includes(field)) {
         throw new Error('Champ non autorisé');
     }

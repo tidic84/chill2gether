@@ -41,7 +41,7 @@ function initializeSocket(server, allowedOrigins) {
     const usersInRoom = anonymousUserStore.getUsersInRoom(roomId);
     io.to(roomId).emit("update-users", usersInRoom);
 
-    // Empêcher les nouveaux updates pendant 1 seconde
+    // Empêcher les nouveaux updates pendant 100ms
     setTimeout(() => {
       updateUsersThrottleMap.delete(roomId);
     }, 100);
@@ -96,11 +96,20 @@ function initializeSocket(server, allowedOrigins) {
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
       if (currentUser) {
+        const oldUsername = currentUser.username;
         anonymousUserStore.updateUsername(currentUser.userId, newUsername);
+
+        // Confirmer au client
         socket.emit("username-updated", { username: newUsername });
+
         console.log(
-          `Utilisateur ${currentUser.userId} a changé de nom: ${newUsername}`,
+          `Utilisateur ${currentUser.userId} a changé de nom: ${oldUsername} -> ${newUsername}`,
         );
+
+        // Si l'utilisateur est dans une room, notifier tous les membres
+        if (socket.currentRoomId) {
+          sendThrottledUpdateUsers(socket.currentRoomId);
+        }
       }
     });
 
@@ -144,9 +153,20 @@ function initializeSocket(server, allowedOrigins) {
     });
 
     // Rejoindre une room spécifique
-    socket.on("join-room", async (roomId) => {
+    socket.on("join-room", async (data) => {
+      // Accepter soit un string (roomId) soit un objet { roomId, username }
+      const roomId = typeof data === "string" ? data : data.roomId;
+      const username =
+        typeof data === "object" && data.username ? data.username : null;
+
       anonymousUserStore.updateActivity(socket.id);
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
+
+      // Si un username est fourni, mettre à jour le username de l'utilisateur
+      if (username && currentUser) {
+        anonymousUserStore.updateUsername(currentUser.userId, username);
+        currentUser.username = username;
+      }
 
       socket.join(roomId);
 
