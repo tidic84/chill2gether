@@ -34,6 +34,8 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
     const [isReady, setIsReady] = useState(false);
     const isLocalActionRef = useRef(false);
     const onEndedRef = useRef(onEnded);
+    const hasSyncedRef = useRef(false);
+    const ignoreNextPlayRef = useRef(false); 
     
     const videoId = extractYouTubeID(url);
 
@@ -61,7 +63,7 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
         const initPlayer = () => {
             if (!window.YT || !window.YT.Player) {
-                setTimeout(initPlayer, 100);
+                setTimeout(initPlayer, 500);
                 return;
             }
 
@@ -72,11 +74,12 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
 
             const container = document.getElementById('youtube-player');
             if (!container) {
-                setTimeout(initPlayer, 100);
+                setTimeout(initPlayer, 500);
                 return;
             }
 
-            console.log("🔨 Création du player avec videoId:", videoId);
+            console.log("Création du player avec videoId:", videoId);
+            ignoreNextPlayRef.current = true; //Ignorer le premier play automatique
 
             try {
                 playerRef.current = new window.YT.Player('youtube-player', {
@@ -97,19 +100,33 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                             playerReadyRef.current = true;
                             loadedVideoIdRef.current = videoId;
                             setIsReady(true);
+                            
+                            // Demander la sync au backend
+                            if (!hasSyncedRef.current && roomId) {
+                                setTimeout(() => {
+                                    console.log("Demande de synchronisation au backend...");
+                                    socket.emit('request-sync', roomId);
+                                }, 500); // Petit délai pour laisser le player s'initialiser
+                            }
                         },
                         onStateChange: (event) => {
                             // Vidéo terminée
                             if (event.data === 0) {
-                                console.log("⏭️ Vidéo terminée");
+                                console.log("Vidéo terminée");
                                 if (onEndedRef.current) {
                                     onEndedRef.current();
                                 }
                             }
                             
-                            // Synchronisation play/pause
+                            //Ignorer le premier play automatique
                             if (!isLocalActionRef.current) {
                                 if (event.data === 1) {
+                                    if (ignoreNextPlayRef.current) {
+                                        console.log("Premier play ignoré (chargement initial)");
+                                        ignoreNextPlayRef.current = false;
+                                        return;
+                                    }
+                                    
                                     socket.emit("video-play", { 
                                         roomId, 
                                         time: event.target.getCurrentTime() 
@@ -150,12 +167,52 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
                     playerRef.current = null;
                     playerReadyRef.current = false;
                     loadedVideoIdRef.current = null;
+                    hasSyncedRef.current = false;
                 } catch (e) {
                     console.warn("Erreur cleanup:", e);
                 }
             }
         };
-    }, [videoId ? 'has-video' : 'no-video']); // Se déclenche quand on passe de null à une vidéo
+    }, [videoId ? 'has-video' : 'no-video', socket, roomId, autoplay]);
+
+    //Écouter la réponse de synchronisation
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleSyncResponse = (data) => {
+            console.log("Réponse de sync reçue:", data);
+            
+            // Ne pas synchroniser si déjà fait
+            if (hasSyncedRef.current) {
+                console.log("Déjà synchronisé, ignorer");
+                return;
+            }
+            
+            // Synchroniser seulement si une vidéo est en cours de lecture
+            if (playerRef.current && playerReadyRef.current && data.hasVideo && data.isPlaying) {
+                const currentTime = data.currentTime;
+                console.log("Synchronisation au temps:", currentTime, "secondes");
+                
+                isLocalActionRef.current = true;
+                playerRef.current.seekTo(currentTime, true);
+                
+                setTimeout(() => {
+                    isLocalActionRef.current = false;
+                }, 500);
+                
+                hasSyncedRef.current = true;
+            } else if (data.hasVideo && !data.isPlaying) {
+                console.log("Vidéo en pause, pas de synchronisation automatique");
+                hasSyncedRef.current = true;
+            }
+        };
+
+        socket.on("sync-response", handleSyncResponse);
+
+        return () => {
+            socket.off("sync-response", handleSyncResponse);
+        };
+    }, [socket]);
 
     // Charger une nouvelle vidéo quand videoId change (sans détruire le player)
     useEffect(() => {
@@ -168,11 +225,9 @@ export default function VideoPlayer({ url, onEnded, autoplay = true }) {
             return;
         }
 
-        console.log("🎵 Chargement nouvelle vidéo:", videoId, "autoplay:", autoplay);
+        console.log("Chargement nouvelle vidéo:", videoId, "autoplay:", autoplay);
 
         try {
-            // Utiliser cueVideoById si autoplay est false (charge sans lancer)
-            // Utiliser loadVideoById si autoplay est true (charge et lance)
             if (autoplay) {
                 playerRef.current.loadVideoById({
                     videoId: videoId,

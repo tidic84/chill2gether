@@ -50,6 +50,29 @@ function initializePlaylistHandlers(io, socket) {
     });
 
     /**
+ * REQUEST-SYNC
+ * Demande le temps actuel de lecture de la vidéo en cours
+ * Utilisé quand un utilisateur rejoint la room pour se synchroniser en temps réel
+ * Émet 'sync-response' avec le temps de lecture actuel
+ */
+    socket.on('request-sync', (roomId) => {
+        try {
+            if (!roomId) {
+                socket.emit('playlist-error', { error: 'Room ID is required to request sync.' });
+                return;
+            }
+
+            const syncData = playlistService.getCurrentPlaybackTime(roomId);
+            socket.emit('sync-response', syncData);
+
+            debugLog(`Sync demandé pour la room ${roomId}: ${syncData.currentTime}s (playing: ${syncData.isPlaying})`);
+        } catch (error) {
+            debugLog(`Erreur lors de la demande de sync pour la room ${roomId}: ${error}`);
+            socket.emit('playlist-error', { error: 'An error occurred while requesting sync.' });
+        }
+    });
+
+    /**
      * ADD-TO-PLAYLIST
      * Ajoute une vidéo à la playlist et broadcast à tous les utilisateurs de la room
      * Si c'est la première vidéo, elle est aussi ajoutée à l'historique (autoplay)
@@ -157,7 +180,7 @@ function initializePlaylistHandlers(io, socket) {
             }
 
             // playVideo ajoute automatiquement à l'historique et broadcast
-            const videoData = playlistService.playVideo(roomId, videoIndex, io); 
+            const videoData = playlistService.playVideo(roomId, videoIndex, io);
 
             io.to(roomId).emit('video-changed', videoData);
         } catch (error) {
@@ -219,7 +242,7 @@ function initializePlaylistHandlers(io, socket) {
             }
 
             const user = anonymousUserStore.getUserBySocketId(socket.id);
-            
+
             // Broadcast à tous SAUF l'émetteur
             socket.to(roomId).emit('video-play-sync', {
                 time: time || 0,
@@ -246,7 +269,7 @@ function initializePlaylistHandlers(io, socket) {
             }
 
             const user = anonymousUserStore.getUserBySocketId(socket.id);
-            
+
             // Broadcast à tous SAUF l'émetteur
             socket.to(roomId).emit('video-pause-sync', {
                 time: time || 0,
@@ -273,7 +296,7 @@ function initializePlaylistHandlers(io, socket) {
             }
 
             const user = anonymousUserStore.getUserBySocketId(socket.id);
-            
+
             // Broadcast à tous SAUF l'émetteur
             socket.to(roomId).emit('video-seek-sync', {
                 time,

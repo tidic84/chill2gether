@@ -165,6 +165,41 @@ class PlaylistService {
     }
 
     /**
+ * Retourne le temps de lecture actuel de la vidéo en cours
+ * Calcule en temps réel le temps écoulé depuis currentVideoStartTime
+ * Utilisé pour synchroniser les nouveaux utilisateurs qui rejoignent
+ * @param {string} roomId 
+ * @returns {object} { currentTime: number, isPlaying: boolean, currentIndex: number, hasVideo: boolean }
+ */
+    getCurrentPlaybackTime(roomId) {
+        const playlist = this.getPlaylistByRoomId(roomId);
+
+        if (!playlist || playlist.videos.length === 0) {
+            return {
+                currentTime: 0,
+                isPlaying: false,
+                currentIndex: 0,
+                hasVideo: false
+            };
+        }
+
+        let currentTime = 0;
+        if (playlist.isPlaying && playlist.currentVideoStartTime) {
+            const startTime = new Date(playlist.currentVideoStartTime);
+            const now = new Date();
+            currentTime = Math.floor((now - startTime) / 1000); // Temps écoulé en secondes
+        }
+
+        return {
+            currentTime: currentTime,
+            isPlaying: playlist.isPlaying,
+            currentIndex: playlist.currentIndex,
+            hasVideo: true,
+            videoId: playlist.videos[playlist.currentIndex]?.id || null
+        };
+    }
+
+    /**
      * Ajoute une vidéo à la playlist
      * Si c'est la première vidéo, démarre automatiquement la lecture et l'ajoute à l'historique
      * @throws {Error} Si données invalides ou playlist pleine (max 50)
@@ -235,7 +270,7 @@ class PlaylistService {
                 playlist.isPlaying = false;
             }
         }
-        
+
         playlist.videos.splice(videoIndex, 1);
 
         // Réinitialiser si playlist vide
@@ -332,7 +367,7 @@ class PlaylistService {
         }
 
         const nextIndex = this.getNextVideoIndex(roomId);
-        
+
         // Fin de playlist
         if (nextIndex === -1 || nextIndex === null) {
             playlist.isPlaying = false;
