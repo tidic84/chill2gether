@@ -1,15 +1,20 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import Carousel from "../components/Carousel/Carousel";
 import SpotlightCard from "../components/SpotlightCard/SpotlightCard";
 import Stepper, { Step } from "../components/Stepper/Stepper";
 import GridMotion from "../components/GridMotion/GridMotion";
-
-import { useState, useEffect } from "react";
 import { useSocket } from "../contexts/SocketContext";
 
 export default function HomePage() {
     const [showTutorial, setShowTutorial] = useState(false);
     const [name, setName] = useState("");
+    const [joinCode, setJoinCode] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
+    const [isJoining, setIsJoining] = useState(false);
+    const [error, setError] = useState(false);
+    const inputRef = useRef(null);
+    const navigate = useNavigate();
     const socket = useSocket();
 
     useEffect(() => {
@@ -24,148 +29,205 @@ export default function HomePage() {
         });
     }, [socket]);
 
+    const createInstantRoom = () => {
+        setIsCreating(true);
+
+        // Génération d'un ID aléatoire style "ZEN-XXXX"
+        const randomId = "ZEN-" + Math.floor(1000 + Math.random() * 9000);
+
+        setTimeout(() => {
+            navigate(`/create-room`);
+            setIsCreating(false);
+        }, 1000);
+    };
+
+    const handleJoinRoom = () => {
+        const code = joinCode.trim();
+
+        if (code === "") {
+            setError(true);
+            setTimeout(() => setError(false), 500);
+            inputRef.current?.focus();
+        } else {
+            setIsJoining(true);
+            setTimeout(() => {
+                // Navigation vers la room avec le code
+                navigate(`/room/${code}`);
+                setIsJoining(false);
+            }, 800);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        setJoinCode(e.target.value.toUpperCase());
+    };
+
+    const handleKeyPress = (e) => {
+        if (e.key === "Enter") {
+            handleJoinRoom();
+        }
+    };
+
     return (
-        <div className="relative min-h-screen overflow-hidden">
-    
-            <GridMotion className="absolute inset-0 -z-20 pointer-events-none" />
+        <div className="flex flex-col h-screen selection:bg-zen-sage/20 selection:text-zen-sage overflow-hidden">
+            {/* Background Ambiance */}
+            <div className="organic-shape shape-sage"></div>
+            <div className="organic-shape shape-clay"></div>
 
-            {/* section background is now a semi-transparent overlay so particles stay visible */}
-            <section className="relative z-10 flex flex-col items-center justify-center h-screen text-white">
-                
-
-                <h1 className="text-4xl font-bold mb-8">Chill2Gether</h1>
-
-                {showTutorial && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center">
-                        <div
-                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                            onClick={() => setShowTutorial(false)}
-                        />
-                        <div className="relative z-10 w-full max-w-2xl p-6">
-                            <Stepper
-                                initialStep={1}
-                                onStepChange={(step) => console.log(step)}
-                                onFinalStepCompleted={() => {
-                                    console.log("All steps completed!");
-                                    setShowTutorial(false);
-                                }}
-                                backButtonText="Previous"
-                                nextButtonText="Next"
-                                className="rounded-xl"
-                            >
-                                <Step>
-                                    <h2>Welcome to the React Bits stepper!</h2>
-                                    <p>Check out the next step!</p>
-                                </Step>
-                                <Step>
-                                    <h2>Step 2</h2>
-                                    <img
-                                        style={{
-                                            height: "100px",
-                                            width: "100%",
-                                            objectFit: "cover",
-                                            objectPosition: "center -70px",
-                                            borderRadius: "15px",
-                                            marginTop: "1em",
-                                        }}
-                                        src="https://www.purrfectcatgifts.co.uk/cdn/shop/collections/Funny_Cat_Cards_640x640.png?v=1663150894"
-                                    />
-                                    <p>Custom step content!</p>
-                                </Step>
-                                <Step>
-                                    <h2>How about an input?</h2>
-                                    <input
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        placeholder="Your name?"
-                                        className="w-full rounded border px-2 py-1 text-black"
-                                    />
-                                </Step>
-                                <Step>
-                                    <h2>Final Step</h2>
-                                    <p>You made it!</p>
-                                </Step>
-                            </Stepper>
-                        </div>
+            {/* Navbar */}
+            <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent">
+                <Link to="/" className="flex items-center gap-3 cursor-pointer group">
+                    <div className="w-10 h-10 bg-zen-sage rounded-xl flex items-center justify-center text-zen-bg shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                        <i className="fa-solid fa-mug-hot text-lg"></i>
                     </div>
-                )}
+                    <h1 className="text-xl font-bold tracking-tight text-zen-text">
+                        chill
+                        <span className="text-zen-muted font-medium">2gether</span>
+                    </h1>
+                </Link>
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Link
-                        to="/create-room"
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition"
-                    >
-                        Créer une room
-                    </Link>
+                <div className="flex items-center gap-6">
                     <Link
                         to="/login"
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition"
+                        className="hidden md:block text-sm font-semibold text-zen-muted hover:text-zen-sage transition-colors"
                     >
                         Se connecter
                     </Link>
-
                     <Link
                         to="/register"
-                        className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-semibold transition"
+                        className="px-6 py-2.5 rounded-full bg-white border border-zen-border text-zen-text text-sm font-bold hover:border-zen-sage hover:text-zen-sage transition-all shadow-sm"
                     >
-                        Créer un compte
+                        S'inscrire
                     </Link>
                 </div>
+            </nav>
 
-                <div className="absolute flex bottom-4 left-4 z-20">
-                    <div
-                        className="
-              origin-bottom-left
-              scale-[0.7] sm:scale-[0.8] md:scale-[0.9] lg:scale-[1.0] xl:scale-[1.1] 2xl:scale-[1.25]
-              transition-transform duration-300
-            "
-                    >
-                        <Carousel
-                            baseWidth={300}
-                            autoplay
-                            autoplayDelay={4000}
-                            pauseOnHover
-                            loop
-                            round={false}
-                        />
+            {/* Main Content */}
+            <main className="flex-grow flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-4xl mx-auto">
+                <div className="w-full text-center flex flex-col items-center">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-zen-border text-xs font-bold text-zen-stone shadow-sm mb-6">
+                        <span className="w-2 h-2 rounded-full bg-zen-sage animate-pulse"></span>
+                        Espace de détente partagé
                     </div>
-                </div>
 
-                <div className="absolute flex bottom-4 right-4 z-20">
-                    <div
-                        className="
-              origin-bottom-right
-              scale-[0.7] sm:scale-[0.8] md:scale-[0.9] lg:scale-[1.0] xl:scale-[1.1] 2xl:scale-[1.25]
-              transition-transform duration-300
-            "
-                    >
-                        <SpotlightCard
-                            className="custom-spotlight-card"
-                            spotlightColor="rgba(120, 13, 163, 0.53)"
+                    {/* Titre */}
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-zen-text leading-[1.1] mb-6">
+                        Prenez le temps,
+                        <br />
+                        <span className="relative inline-block">
+                            <span className="relative z-10 text-zen-sage">
+                                ensemble.
+                            </span>
+                            <span className="absolute bottom-2 left-0 w-full h-3 bg-zen-clay/20 -rotate-2 -z-0 rounded-full"></span>
+                        </span>
+                    </h1>
+
+                    <p className="text-lg text-zen-stone max-w-lg mx-auto leading-relaxed font-medium mb-12">
+                        Écoutez de la musique, regardez des vidéos ou discutez.
+                        <br />Un espace calme, sans inscription.
+                    </p>
+
+                    {/* Actions Container */}
+                    <div className="w-full max-w-sm space-y-6">
+                        {/* 1. GROS BOUTON CRÉER */}
+                        <button
+                            onClick={createInstantRoom}
+                            disabled={isCreating}
+                            className="btn-create w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 group relative overflow-hidden disabled:opacity-90 disabled:pointer-events-none"
                         >
-                            <div className="p-4 text-left max-w-xs">
-                                <h3 className="text-2xl font-extrabold text-white mb-2">
-                                    Tutoriel
-                                </h3>
-                                <p className="text-sm text-slate-200 mb-2">
-                                    Découvrez comment utiliser <br />
-                                    <span className="font-semibold text-white">
-                                        Chill2Gether
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                            {isCreating ? (
+                                <>
+                                    <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                    <span className="relative">Génération...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+                                        <i className="fa-solid fa-plus text-sm"></i>
                                     </span>
-                                    en quelques <br />
-                                    <span className="font-semibold">étapes simples</span> :
-                                </p>
-                                <button
-                                    onClick={() => setShowTutorial(true)}
-                                    className="duration-350 flex items-center justify-center rounded-full bg-purple-700 py-1.5 px-3.5 font-medium tracking-tight text-white transition hover:bg-purple-800 active:bg-purple-900"
-                                >
-                                    Voir le tutoriel
-                                </button>
-                            </div>
-                        </SpotlightCard>
+                                    <span className="relative">Créer une room</span>
+                                </>
+                            )}
+                        </button>
+
+                        {/* Séparateur "OU" */}
+                        <div className="flex items-center gap-4 w-full opacity-60">
+                            <div className="h-px bg-zen-muted/40 flex-1"></div>
+                            <span className="text-xs font-bold text-zen-muted uppercase tracking-widest">
+                                ou
+                            </span>
+                            <div className="h-px bg-zen-muted/40 flex-1"></div>
+                        </div>
+
+                        {/* 2. INPUT REJOINDRE */}
+                        <div
+                            className={`join-input-container relative flex p-1.5 rounded-2xl w-full ${
+                                error ? "ring-2 ring-red-300 animate-pulse" : ""
+                            }`}
+                        >
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                className="flex-grow bg-transparent text-zen-text px-4 py-2 outline-none font-medium text-base placeholder:text-zen-muted/70 text-center"
+                                placeholder="Entrer un code..."
+                                value={joinCode}
+                                onChange={handleInputChange}
+                                onKeyPress={handleKeyPress}
+                                maxLength={10}
+                                autoComplete="off"
+                            />
+                            <button
+                                onClick={handleJoinRoom}
+                                disabled={isJoining}
+                                className="px-5 py-2 rounded-xl bg-zen-surface hover:bg-zen-bg border border-transparent hover:border-zen-clay/30 text-zen-stone font-bold hover:text-zen-clay transition-all group"
+                                title="Rejoindre"
+                            >
+                                {isJoining ? (
+                                    <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                ) : (
+                                    <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Icons minimalistes */}
+                    <div className="pt-16 flex justify-center gap-10 opacity-60">
+                        <i
+                            className="fa-brands fa-youtube text-2xl text-zen-stone brand-icon transition-all duration-300 cursor-pointer"
+                            title="YouTube"
+                        ></i>
+                        <i
+                            className="fa-brands fa-twitch text-2xl text-zen-stone brand-icon transition-all duration-300 cursor-pointer"
+                            title="Twitch"
+                        ></i>
+                        <i
+                            className="fa-solid fa-music text-2xl text-zen-stone brand-icon transition-all duration-300 cursor-pointer"
+                            title="Musique"
+                        ></i>
                     </div>
                 </div>
-            </section>
+            </main>
+
+            {/* Footer Discret */}
+            <footer className="absolute bottom-8 w-full text-center z-50">
+                <div className="text-xs font-bold text-zen-muted/60 flex justify-center gap-8 uppercase tracking-widest">
+                    <a
+                        href="#"
+                        className="hover:text-zen-sage transition-colors"
+                    >
+                        Concept
+                    </a>
+                    <a
+                        href="#"
+                        className="hover:text-zen-sage transition-colors"
+                    >
+                        Support
+                    </a>
+                </div>
+            </footer>
         </div>
     );
 }

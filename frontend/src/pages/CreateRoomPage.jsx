@@ -1,24 +1,60 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { roomApi } from "../services/api";
-import GridMotion from "../components/GridMotion/GridMotion";
+import { useSocket } from "../contexts/SocketContext";
 
 export default function CreateRoomPage() {
     const navigate = useNavigate();
+    const socket = useSocket();
     const [requiresPassword, setRequiresPassword] = useState(false);
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [waitingForUser, setWaitingForUser] = useState(true);
+
+    // Attendre que le userId soit disponible
+    useEffect(() => {
+        const checkUserId = () => {
+            const storedUserId = localStorage.getItem('anonymousUserId');
+            if (storedUserId) {
+                setUserId(storedUserId);
+                setWaitingForUser(false);
+            }
+        };
+
+        // Vérifier immédiatement
+        checkUserId();
+
+        // Écouter l'événement user-registered
+        const handleUserRegistered = (data) => {
+            console.log('User registered:', data);
+            setUserId(data.userId);
+            setWaitingForUser(false);
+        };
+
+        socket.on('user-registered', handleUserRegistered);
+
+        // Timeout de sécurité (5 secondes)
+        const timeout = setTimeout(() => {
+            if (!userId) {
+                setWaitingForUser(false);
+                setError("Impossible de se connecter au serveur. Veuillez rafraîchir la page.");
+            }
+        }, 5000);
+
+        return () => {
+            socket.off('user-registered', handleUserRegistered);
+            clearTimeout(timeout);
+        };
+    }, [socket, userId]);
 
     const handleCreateRoom = async (e) => {
         e.preventDefault();
         setError(null);
 
-        // Récupérer le userId depuis localStorage
-        const userId = localStorage.getItem('anonymousUserId');
-
         if (!userId) {
-            setError("Vous devez être connecté pour créer une room");
+            setError("Vous devez être connecté pour créer une room. Veuillez rafraîchir la page.");
             return;
         }
 
@@ -49,84 +85,143 @@ export default function CreateRoomPage() {
     };
 
     return (
-        <div className="relative min-h-screen overflow-hidden">
-            
-            <GridMotion className="absolute inset-0 -z-20" />
+        <div className="flex flex-col h-screen selection:bg-zen-sage/20 selection:text-zen-sage overflow-hidden bg-zen-bg">
+            {/* Background Ambiance */}
+            <div className="organic-shape shape-sage"></div>
+            <div className="organic-shape shape-clay"></div>
 
-            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-white">
-                {/* Couche sombre semi-transparente */}
-                <div className="absolute inset-0 z-0 bg-black/40 pointer-events-none" />
+            {/* Navbar */}
+            <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent">
+                <Link to="/" className="flex items-center gap-3 cursor-pointer group">
+                    <div className="w-10 h-10 bg-zen-sage rounded-xl flex items-center justify-center text-zen-bg shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                        <i className="fa-solid fa-mug-hot text-lg"></i>
+                    </div>
+                    <h1 className="text-xl font-bold tracking-tight text-zen-text">
+                        chill<span className="text-zen-muted font-medium">2gether</span>
+                    </h1>
+                </Link>
 
-                <div className="relative z-10 w-full max-w-md p-8 bg-black/60 backdrop-blur-md rounded-xl shadow-lg">
-                    <h1 className="text-3xl font-bold mb-6 text-center">Créer une Room</h1>
+                <Link 
+                    to="/" 
+                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted hover:text-zen-sage transition-colors"
+                >
+                    <i className="fa-solid fa-arrow-left"></i>
+                    <span className="hidden md:inline">Retour</span>
+                </Link>
+            </nav>
 
-                    <form onSubmit={handleCreateRoom} className="space-y-6">
-                        {/* Toggle pour le mot de passe */}
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium">
-                                Room privée (avec mot de passe)
-                            </label>
-                            <button
-                                type="button"
-                                onClick={() => setRequiresPassword(!requiresPassword)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                    requiresPassword ? 'bg-blue-600' : 'bg-gray-600'
-                                }`}
-                            >
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                        requiresPassword ? 'translate-x-6' : 'translate-x-1'
+            {/* Main Content */}
+            <main className="flex-grow flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-md mx-auto">
+                <div className="w-full bg-white rounded-3xl shadow-lg border border-zen-border p-8">
+                    
+                    {/* Icon Header */}
+                    <div className="flex justify-center mb-6">
+                        <div className="w-16 h-16 bg-zen-sage/10 rounded-2xl flex items-center justify-center">
+                            <i className="fa-solid fa-door-open text-3xl text-zen-sage"></i>
+                        </div>
+                    </div>
+
+                    <h1 className="text-3xl font-bold text-center text-zen-text mb-2">Créer une Room</h1>
+                    <p className="text-center text-zen-muted text-sm mb-8">
+                        Configurez votre espace de détente
+                    </p>
+
+                    {waitingForUser ? (
+                        // Loader pendant l'attente du userId
+                        <div className="flex flex-col items-center justify-center py-8">
+                            <i className="fa-solid fa-circle-notch fa-spin text-4xl text-zen-sage mb-4"></i>
+                            <p className="text-zen-muted text-sm">Connexion en cours...</p>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleCreateRoom} className="space-y-6">
+                            {/* Toggle pour le mot de passe */}
+                            <div className="flex items-center justify-between p-4 bg-zen-surface rounded-xl border border-zen-border">
+                                <div className="flex items-center gap-3">
+                                    <i className="fa-solid fa-lock text-zen-stone"></i>
+                                    <div>
+                                        <label className="text-sm font-bold text-zen-text block">
+                                            Room privée
+                                        </label>
+                                        <span className="text-xs text-zen-muted">Avec mot de passe</span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setRequiresPassword(!requiresPassword)}
+                                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                                        requiresPassword ? 'bg-zen-sage' : 'bg-zen-muted/30'
                                     }`}
-                                />
-                            </button>
-                        </div>
-
-                        {/* Champ mot de passe (affiché si requiresPassword est true) */}
-                        {requiresPassword && (
-                            <div>
-                                <label htmlFor="password" className="block text-sm font-medium mb-2">
-                                    Mot de passe
-                                </label>
-                                <input
-                                    type="password"
-                                    id="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                    placeholder="Entrez un mot de passe"
-                                    required={requiresPassword}
-                                />
+                                >
+                                    <span
+                                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
+                                            requiresPassword ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                    />
+                                </button>
                             </div>
-                        )}
 
-                        {/* Message d'erreur */}
-                        {error && (
-                            <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-200 text-sm">
-                                {error}
+                            {/* Champ mot de passe */}
+                            {requiresPassword && (
+                                <div className="space-y-2 animate-[fadeIn_0.3s_ease-in-out]">
+                                    <label htmlFor="password" className="block text-sm font-bold text-zen-text">
+                                        Mot de passe
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="password"
+                                            id="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full px-4 py-3 bg-zen-surface border border-zen-border rounded-xl text-zen-text placeholder:text-zen-muted/60 focus:outline-none focus:border-zen-sage focus:ring-2 focus:ring-zen-sage/20 transition-all"
+                                            placeholder="Entrez un mot de passe"
+                                            required={requiresPassword}
+                                        />
+                                        <i className="fa-solid fa-key absolute right-4 top-1/2 -translate-y-1/2 text-zen-muted"></i>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Message d'erreur */}
+                            {error && (
+                                <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                                    <i className="fa-solid fa-circle-exclamation"></i>
+                                    <span>{error}</span>
+                                </div>
+                            )}
+
+                            {/* Boutons */}
+                            <div className="flex flex-col gap-3 pt-2">
+                                <button
+                                    type="submit"
+                                    className="btn-create w-full py-3.5 rounded-xl font-bold text-base flex items-center justify-center gap-2 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={loading || !userId}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                            <span>Création en cours...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fa-solid fa-plus"></i>
+                                            <span>Créer la room</span>
+                                        </>
+                                    )}
+                                </button>
+                                
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/')}
+                                    className="w-full py-3.5 rounded-xl font-bold text-base bg-zen-surface hover:bg-zen-bg border border-zen-border text-zen-stone hover:text-zen-text transition-all"
+                                    disabled={loading}
+                                >
+                                    Annuler
+                                </button>
                             </div>
-                        )}
-
-                        {/* Boutons */}
-                        <div className="flex gap-4">
-                            <button
-                                type="button"
-                                onClick={() => navigate('/')}
-                                className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg font-semibold transition"
-                                disabled={loading}
-                            >
-                                Annuler
-                            </button>
-                            <button
-                                type="submit"
-                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={loading}
-                            >
-                                {loading ? 'Création...' : 'Créer la room'}
-                            </button>
-                        </div>
-                    </form>
+                        </form>
+                    )}
                 </div>
-            </div>
+            </main>
         </div>
     );
 }
