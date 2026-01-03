@@ -6,7 +6,7 @@ export default function MainLayout({ video, chat, users, playlist, search, histo
     return (
         <div className="w-full h-screen flex flex-col bg-zen-bg dark:bg-zen-dark-bg text-zen-text dark:text-zen-dark-text overflow-hidden">
             {/* Main Content Area - Scrollable */}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden mb-20">
                 <div className="max-w-[1600px] w-full mx-auto p-6">
                     <div className="flex gap-6">
                         {/* LEFT/CENTER AREA */}
