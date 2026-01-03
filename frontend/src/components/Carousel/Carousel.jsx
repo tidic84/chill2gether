@@ -50,8 +50,8 @@ function CarouselItem({ item, index, x, itemWidth, round, effectiveTransition, t
         <motion.div
             key={index}
             className={`relative shrink-0 flex flex-col ${round
-                ? 'items-center justify-center text-center bg-[#060010] border-0'
-                : 'items-start justify-between bg-[#222] border border-[#222] rounded-[12px]'
+                ? 'items-center justify-center text-center bg-zen-bg dark:bg-zen-dark-bg border-0'
+                : 'items-start justify-between bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-[12px]'
                 } overflow-hidden cursor-grab active:cursor-grabbing`}
             style={{
                 width: itemWidth,
@@ -62,13 +62,13 @@ function CarouselItem({ item, index, x, itemWidth, round, effectiveTransition, t
             transition={effectiveTransition}
         >
             <div className={`${round ? 'p-0 m-0' : 'mb-4 p-5'}`}>
-                <span className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-[#060010]">
+                <span className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-zen-sage dark:bg-zen-dark-sage">
                     {item.icon}
                 </span>
             </div>
             <div className="p-5">
-                <div className="mb-1 font-black text-lg text-white">{item.title}</div>
-                <p className="text-sm text-white">{item.description}</p>
+                <div className="mb-1 font-black text-lg text-zen-text dark:text-zen-dark-text">{item.title}</div>
+                <p className="text-sm text-zen-muted dark:text-zen-dark-muted">{item.description}</p>
             </div>
         </motion.div>
     );
@@ -166,7 +166,7 @@ export default function Carousel({
     return (
         <div
             ref={containerRef}
-            className={`relative overflow-hidden p-4 ${round ? 'rounded-full border border-white' : 'rounded-[24px] border border-[#222]'
+            className={`relative overflow-hidden p-4 ${round ? 'rounded-full border border-zen-border dark:border-zen-dark-border' : 'rounded-[24px] border border-zen-border dark:border-zen-dark-border'
                 }`}
             style={{
                 width: `${baseWidth}px`,
@@ -209,11 +209,11 @@ export default function Carousel({
                             key={index}
                             className={`h-2 w-2 rounded-full cursor-pointer transition-colors duration-150 ${currentIndex % items.length === index
                                     ? round
-                                        ? 'bg-white'
-                                        : 'bg-[#333333]'
+                                        ? 'bg-zen-sage dark:bg-zen-dark-sage'
+                                        : 'bg-zen-sage dark:bg-zen-dark-sage'
                                     : round
-                                        ? 'bg-[#555]'
-                                        : 'bg-[rgba(51,51,51,0.4)]'
+                                        ? 'bg-zen-muted dark:bg-zen-dark-muted'
+                                        : 'bg-zen-muted/40 dark:bg-zen-dark-muted/40'
                                 }`}
                             animate={{
                                 scale: currentIndex % items.length === index ? 1.2 : 1

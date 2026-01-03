@@ -23,8 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 .cursor/
+.claude/
 
-# fichiers de configuration 
+# fichiers de configuration
 .env
 .env.local
 .env.*.local
