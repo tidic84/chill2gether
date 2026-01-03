@@ -19,98 +19,68 @@ const userPermissionsStore = require('../services/userPermissionsStore');
 function initializeSocket(server, allowedOrigins) {
   const io = new Server(server, {
     cors: {
-      origin: "*", // Permet toutes les origines, incluant file://
+      origin: "*",
       methods: ["GET", "POST"],
       credentials: true,
     },
-    // Réduire les timeouts pour détecter les déconnexions plus rapidement
-    pingTimeout: 5000, // Temps d'attente avant de considérer la connexion perdue
-    pingInterval: 10000, // Intervalle entre les pings
+    pingTimeout: 5000,
+    pingInterval: 10000,
   });
 
-  // Map pour stocker les timers de throttling par room
   const updateUsersThrottleMap = new Map();
 
-  // Fonction pour envoyer les updates throttlés (max 1 par seconde par room)
   const sendThrottledUpdateUsers = (roomId) => {
     if (updateUsersThrottleMap.has(roomId)) {
-      // Un update est déjà prévu, ne rien faire
       return;
     }
-
-    // Marquer qu'un update est en cours
     updateUsersThrottleMap.set(roomId, true);
-
-    // Envoyer l'update immédiatement
     const usersInRoom = anonymousUserStore.getUsersInRoom(roomId);
     io.to(roomId).emit("update-users", usersInRoom);
-
-    // Empêcher les nouveaux updates pendant 100ms
     setTimeout(() => {
       updateUsersThrottleMap.delete(roomId);
     }, 100);
   };
 
-  // Nettoyage périodique des utilisateurs déconnectés (toutes les 10 secondes)
   setInterval(() => {
-    anonymousUserStore.cleanupDisconnectedUsers(3600); // Supprime après 1 heure de déconnexion
+    anonymousUserStore.cleanupDisconnectedUsers(3600);
   }, 10000);
 
-  // Gestion des connexions
   io.on("connection", (socket) => {
     debugLog(`Nouveau client connecté: ${socket.id}`);
 
-    // ### Partie Vérifier si l'utilisateur a déjà un userId (reconnexion)
     const existingUserId = socket.handshake.auth.userId;
-    debugLog("existingUserId", existingUserId);
     let user;
     if (existingUserId && anonymousUserStore.userExists(existingUserId)) {
-      // Utilisateur existant qui se reconnecte (même après une actualisation de page)
       anonymousUserStore.updateSocketId(existingUserId, socket.id);
       user = anonymousUserStore.getUserById(existingUserId);
-      debugLog(
-        `Utilisateur existant reconnecté: ${user.username} (${existingUserId})`,
-      );
+      debugLog(`Utilisateur existant reconnecté: ${user.username}`);
     } else {
-      // Nouvel utilisateur
       const username = socket.handshake.auth.username || null;
       user = anonymousUserStore.createUser(socket.id, username);
-      debugLog(`Nouvel utilisateur créé: ${user.username} (${user.userId})`);
+      debugLog(`Nouvel utilisateur créé: ${user.username}`);
     }
 
-    // Envoyer l'userId au client pour qu'il le stocke
     socket.emit("user-registered", {
       userId: user.userId,
       username: user.username,
       connectedAt: user.connectedAt,
     });
 
-    // Envoyer le nombre d'utilisateurs connectés
     io.emit("users-count", {
       count: anonymousUserStore.getUserCount(),
     });
 
-    // Initialiser les gestionnaires de chat pour ce socket
+    // ✅ Initialiser les handlers UNE SEULE FOIS
     initializeChatHandlers(io, socket);
-
-    // Initialiser les gestionnaires de playlist pour ce socket
     initializePlaylistHandlers(io, socket);
+    initializePermissionsHandlers(io, socket);
 
-    // Événement pour changer de nom d'utilisateur
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
       if (currentUser) {
         const oldUsername = currentUser.username;
         anonymousUserStore.updateUsername(currentUser.userId, newUsername);
-
-        // Confirmer au client
         socket.emit("username-updated", { username: newUsername });
-
-        console.log(
-          `Utilisateur ${currentUser.userId} a changé de nom: ${oldUsername} -> ${newUsername}`,
-        );
-
-        // Si l'utilisateur est dans une room, notifier tous les membres
         if (socket.currentRoomId) {
           sendThrottledUpdateUsers(socket.currentRoomId);
         }
@@ -121,346 +91,152 @@ function initializeSocket(server, allowedOrigins) {
       sendThrottledUpdateUsers(roomId);
     });
 
-    // Événement de déconnexion
     socket.on("disconnect", async (reason) => {
       debugLog(`Client déconnecté: ${socket.id} - Raison: ${reason}`);
-
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
 
-      // Si l'utilisateur était dans une room, décrémenter le compteur
       if (socket.currentRoomId) {
         await roomModel.decrementUserCount(socket.currentRoomId);
         debugLog(`Compteur décrémenté pour la room ${socket.currentRoomId}`);
 
-        // Retirer l'utilisateur de la room en mémoire
         if (currentUser) {
           anonymousUserStore.setUserRoom(currentUser.userId, null);
         }
-
-        // Supprimer l'utilisateur du store avant d'envoyer la mise à jour
         anonymousUserStore.removeUserBySocketId(socket.id);
-
-        // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
         sendThrottledUpdateUsers(socket.currentRoomId);
 
-        // Si dernier utilisateur de la room, supprimer la playlist
-        const usersInRoom = anonymousUserStore.getUsersInRoom(
-          socket.currentRoomId,
-        );
+        const usersInRoom = anonymousUserStore.getUsersInRoom(socket.currentRoomId);
         if (usersInRoom.length === 0) {
           playlistService.deletePlaylist(socket.currentRoomId);
         }
       } else {
-        // Supprimer l'utilisateur du store
         anonymousUserStore.removeUserBySocketId(socket.id);
       }
     });
 
-    // Rejoindre une room spécifique
+    // ✅ UN SEUL join-room
     socket.on("join-room", async (data) => {
-      // Accepter soit un string (roomId) soit un objet { roomId, username }
       const roomId = typeof data === "string" ? data : data.roomId;
-      const username =
-        typeof data === "object" && data.username ? data.username : null;
+      const username = typeof data === "object" && data.username ? data.username : null;
 
       anonymousUserStore.updateActivity(socket.id);
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
 
-      // Si un username est fourni, mettre à jour le username de l'utilisateur
       if (username && currentUser) {
         anonymousUserStore.updateUsername(currentUser.userId, username);
         currentUser.username = username;
       }
 
       socket.join(roomId);
-
-      // Stocker la room actuelle dans le socket pour la gérer lors de la déconnexion
       socket.currentRoomId = roomId;
-
       anonymousUserStore.setUserRoom(currentUser.userId, roomId);
 
-      // Mettre à jour l'activité et le compteur d'utilisateurs de la room
-      await roomModel.incrementUserCount(roomId);
+      let room;
+      try {
+        room = await roomModel.getRoomById(roomId, false);
+
+        if (room) {
+          console.log('Room trouvée, permissions par défaut:', room.defaultPermissions);
+
+          if (room.creatorId === currentUser.userId) {
+            const adminPermissions = {
+              editPermissions: true,
+              sendMessages: true,
+              deleteMessages: true,
+              changeVideo: true,
+              interactionVideo: true
+            };
+            anonymousUserStore.updateUserPermissions(currentUser.userId, adminPermissions);
+            debugLog(`✅ Admin ${currentUser.username} avec tous les droits`);
+          } else {
+            const savedPermissions = userPermissionsStore.getUserPermissions(roomId, currentUser.userId);
+
+            if (savedPermissions) {
+              anonymousUserStore.updateUserPermissions(currentUser.userId, savedPermissions);
+              debugLog(`Permissions restaurées pour ${currentUser.username}`);
+            } else {
+              let defaultPerms = room.defaultPermissions;
+              if (typeof defaultPerms === 'string') {
+                defaultPerms = JSON.parse(defaultPerms);
+              }
+              anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPerms);
+              debugLog(`Permissions par défaut appliquées pour ${currentUser.username}`);
+            }
+          }
+        }
+      } catch (error) {
+        debugLog(`Erreur lors de la récupération des permissions: ${error}`);
+        const defaultPermissions = {
+          editPermissions: false,
+          sendMessages: true,
+          deleteMessages: false,
+          changeVideo: true,
+          interactionVideo: true
+        };
+        anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPermissions);
+      }
+
       await roomModel.updateRoomActivity(roomId);
+      await roomModel.incrementUserCount(roomId);
 
-      debugLog(
-        `${currentUser?.username || "Client"} a rejoint la room ${roomId}`,
-      );
+      debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
 
-      // Confirmer la jointure au client avec les infos utilisateur
-      socket.emit("room-joined", {
+      // ✅ Envoyer avec isAdmin et permissionsSet
+      socket.emit('room-joined', {
         roomId: roomId,
         timestamp: new Date(),
         user: {
           userId: currentUser?.userId,
           username: currentUser?.username,
-        },
+          permissionsSet: currentUser?.permissionsSet,
+          isAdmin: room?.creatorId === currentUser?.userId
+        }
       });
 
-      // Notifier les autres membres de la room
-      socket.to(roomId).emit("user-joined", {
+      socket.to(roomId).emit('user-joined', {
         userId: currentUser?.userId,
         username: currentUser?.username,
         socketId: socket.id,
-        timestamp: new Date(),
+        timestamp: new Date()
       });
 
-      // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
-      sendThrottledUpdateUsers(roomId);
+      const usersInRoom = anonymousUserStore.getUsersInRoom(roomId);
+      socket.emit('update-users', usersInRoom);
     });
 
-    // Quitter une room
-    socket.on("leave-room", async (roomId) => {
+    // ✅ UN SEUL leave-room
+    socket.on('leave-room', async (roomId) => {
       anonymousUserStore.updateActivity(socket.id);
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-
+      if (currentUser && roomId) {
+        userPermissionsStore.removeUserPermissions(roomId, currentUser.userId);
+      }
       socket.leave(roomId);
-
-      // Décrémenter le compteur d'utilisateurs de la room
       await roomModel.decrementUserCount(roomId);
 
-      // Retirer la room du socket et de l'utilisateur en mémoire
       if (socket.currentRoomId === roomId) {
         socket.currentRoomId = null;
       }
-      if (currentUser) {
-        anonymousUserStore.setUserRoom(currentUser.userId, null);
-      }
 
-      debugLog(
-        `${currentUser?.username || "Client"} a quitté la room ${roomId}`,
-      );
+      debugLog(`${currentUser?.username || 'Client'} a quitté la room ${roomId}`);
 
-      // Confirmer la sortie au client
-      socket.emit("room-left", {
+      socket.emit('room-left', {
         roomId: roomId,
-        timestamp: new Date(),
+        timestamp: new Date()
       });
 
-      // Notifier les autres membres de la room
-      socket.to(roomId).emit("user-left", {
+      socket.to(roomId).emit('user-left', {
         userId: currentUser?.userId,
         username: currentUser?.username,
         socketId: socket.id,
-        timestamp: new Date(),
+        timestamp: new Date()
       });
 
-      // Initialiser les gestionnaires de permissions pour ce socket
-      initializePermissionsHandlers(io, socket);
-
-      // ### Partie Vérifier si l'utilisateur a déjà un userId (reconnexion)
-      const existingUserId = socket.handshake.auth.userId;
-      debugLog("existingUserId", existingUserId);
-      let user;
-      if (existingUserId && anonymousUserStore.userExists(existingUserId)) {
-        // Utilisateur existant qui se reconnecte (même après une actualisation de page)
-        anonymousUserStore.updateSocketId(existingUserId, socket.id);
-        user = anonymousUserStore.getUserById(existingUserId);
-        debugLog(`Utilisateur existant reconnecté: ${user.username} (${existingUserId})`);
-      } else {
-        // Nouvel utilisateur
-        const username = socket.handshake.auth.username || null;
-        user = anonymousUserStore.createUser(socket.id, username);
-        debugLog(`Nouvel utilisateur créé: ${user.username} (${user.userId})`);
-      }
-
-      // Envoyer l'userId au client pour qu'il le stocke
-      socket.emit('user-registered', {
-        userId: user.userId,
-        username: user.username,
-        connectedAt: user.connectedAt
-      });
-
-      // Envoyer le nombre d'utilisateurs connectés
-      io.emit('users-count', {
-        count: anonymousUserStore.getUserCount()
-      });
-
-      // Initialiser les gestionnaires de chat pour ce socket
-      initializeChatHandlers(io, socket);
-
-      // Initialiser les gestionnaires de playlist pour ce socket
-      initializePlaylistHandlers(io, socket);
-
-      // Événement pour changer de nom d'utilisateur
-      socket.on('change-username', (newUsername, roomId) => {
-        const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-        if (currentUser) {
-          anonymousUserStore.updateUsername(currentUser.userId, newUsername);
-          socket.emit('username-updated', { username: newUsername });
-          console.log(`Utilisateur ${currentUser.userId} a changé de nom: ${newUsername}`);
-        }
-      });
-
-      socket.on('get-users', async (roomId) => {
-        sendThrottledUpdateUsers(roomId);
-      });
-
-      // Événement de déconnexion
-      socket.on('disconnect', async (reason) => {
-        debugLog(`Client déconnecté: ${socket.id} - Raison: ${reason}`);
-
-        // Si l'utilisateur était dans une room, décrémenter le compteur
-        if (socket.currentRoomId) {
-          await roomModel.decrementUserCount(socket.currentRoomId);
-          debugLog(`Compteur décrémenté pour la room ${socket.currentRoomId}`);
-
-          // Supprimer l'utilisateur du store avant d'envoyer la mise à jour
-          anonymousUserStore.removeUserBySocketId(socket.id);
-
-          // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
-          sendThrottledUpdateUsers(socket.currentRoomId);
-        } else {
-          // Supprimer l'utilisateur du store
-          anonymousUserStore.removeUserBySocketId(socket.id);
-        }
-
-        // Si dernier utilisateur de la room, supprimer la playlist
-        if (socket.currentRoomId) {
-          const usersInRoom = anonymousUserStore.getUsersInRoom(socket.currentRoomId);
-          if (usersInRoom.length === 0) {
-            playlistService.deletePlaylist(socket.currentRoomId);
-          }
-        }
-      });
-
-      // Rejoindre une room spécifique
-      socket.on("join-room", async (roomId) => {
-        anonymousUserStore.updateActivity(socket.id);
-        const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-
-        socket.join(roomId);
-        socket.currentRoomId = roomId;
-        anonymousUserStore.setUserRoom(currentUser.userId, roomId);
-
-        let room; // ✅ Déclarer room avant le try/catch
-
-        try {
-          // ✅ Récupérer la room avec les permissions par défaut MISES À JOUR
-          room = await roomModel.getRoomById(roomId, false);
-
-          if (room) {
-            console.log('Room trouvée, permissions par défaut:', room.defaultPermissions);
-
-            // Si c'est le créateur (admin), donner tous les droits
-            if (room.creatorId === currentUser.userId) {
-              const adminPermissions = {
-                editPermissions: true,
-                sendMessages: true,
-                deleteMessages: true,
-                changeVideo: true,
-                interactionVideo: true
-              };
-              anonymousUserStore.updateUserPermissions(currentUser.userId, adminPermissions);
-              debugLog(`Admin ${currentUser.username} avec tous les droits`);
-            } else {
-              // Vérifier si l'utilisateur a des permissions personnalisées sauvegardées
-              const savedPermissions = userPermissionsStore.getUserPermissions(roomId, currentUser.userId);
-
-              if (savedPermissions) {
-                // Utiliser les permissions sauvegardées (personnalisées)
-                anonymousUserStore.updateUserPermissions(currentUser.userId, savedPermissions);
-                debugLog(`Permissions restaurées pour ${currentUser.username} depuis la sauvegarde`);
-              } else {
-                // Utiliser les permissions par défaut de la room
-                // ✅ S'assurer que c'est bien du JSON
-                let defaultPerms = room.defaultPermissions;
-                if (typeof defaultPerms === 'string') {
-                  defaultPerms = JSON.parse(defaultPerms);
-                }
-                anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPerms);
-                debugLog(`Permissions par défaut appliquées pour ${currentUser.username}:`, defaultPerms);
-              }
-            }
-          }
-        } catch (error) {
-          debugLog(`Erreur lors de la récupération des permissions: ${error}`);
-          // Appliquer les permissions par défaut en cas d'erreur
-          const defaultPermissions = {
-            editPermissions: false,
-            sendMessages: true,
-            deleteMessages: false,
-            changeVideo: true,
-            interactionVideo: true
-          };
-          anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPermissions);
-        }
-
-        await roomModel.updateRoomActivity(roomId);
-        await roomModel.incrementUserCount(roomId);
-
-        debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
-
-        // ✅ Utiliser room ici (elle est maintenant définie)
-        socket.emit('room-joined', {
-          roomId: roomId,
-          timestamp: new Date(),
-          user: {
-            userId: currentUser?.userId,
-            username: currentUser?.username,
-            permissionsSet: currentUser?.permissionsSet,
-            isAdmin: room?.creatorId === currentUser?.userId  // ✅ Maintenant room est défini
-          }
-        });
-
-        // Notifier les autres membres de la room
-        socket.to(roomId).emit('user-joined', {
-          userId: currentUser?.userId,
-          username: currentUser?.username,
-          socketId: socket.id,
-          timestamp: new Date()
-        });
-
-        // Récupérer la liste des utilisateurs après un court délai
-        socket.emit('get-users', roomId);
-      });
-
-      // Quitter une room
-      socket.on('leave-room', async (roomId) => {
-        anonymousUserStore.updateActivity(socket.id);
-        const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-        if (currentUser && roomId) {
-          userPermissionsStore.removeUserPermissions(roomId, currentUser.userId);
-        }
-        socket.leave(roomId);
-
-        // Décrémenter le compteur d'utilisateurs de la room
-        await roomModel.decrementUserCount(roomId);
-
-        // Retirer la room du socket
-        if (socket.currentRoomId === roomId) {
-          socket.currentRoomId = null;
-        }
-
-        debugLog(`${currentUser?.username || 'Client'} a quitté la room ${roomId}`);
-
-        // Confirmer la sortie au client
-        socket.emit('room-left', {
-          roomId: roomId,
-          timestamp: new Date()
-        });
-
-        // Notifier les autres membres de la room
-        socket.to(roomId).emit('user-left', {
-          userId: currentUser?.userId,
-          username: currentUser?.username,
-          socketId: socket.id,
-          timestamp: new Date()
-        });
-
-        // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
-        sendThrottledUpdateUsers(roomId);
-      });
-
-      // Gestion des erreurs
-      socket.on('error', (error) => {
-        debugLog('Erreur Socket.IO:', error);
-      });
+      sendThrottledUpdateUsers(roomId);
     });
 
-    // Gestion des erreurs
-    socket.on("error", (error) => {
-      debugLog("Erreur Socket.IO:", error);
+    socket.on('error', (error) => {
+      debugLog('Erreur Socket.IO:', error);
     });
   });
 

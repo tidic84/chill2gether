@@ -13,7 +13,7 @@ function initializePermissionsHandlers(io, socket) {
     /**
      * UPDATE-ROOM-PERMISSIONS
      * Met à jour les permissions par défaut d'une room (admin uniquement)
-     * ⚠️ N'affecte QUE les nouveaux utilisateurs, pas ceux déjà connectés
+     * ⚠️ Affecte les utilisateurs qui n'ont pas de permissions personnalisées
      */
     socket.on('update-room-permissions', async (data) => {
         try {
@@ -32,22 +32,62 @@ function initializePermissionsHandlers(io, socket) {
                 return;
             }
 
+            console.log('Avant mise à jour - permissions envoyées:', permissions);
+
             // ✅ Mettre à jour UNIQUEMENT les permissions par défaut de la room en base de données
             const updatedRoom = await roomModel.updateDefaultPermissions(roomId, permissions);
 
+            console.log('Après mise à jour - permissions sauvegardées:', updatedRoom.defaultPermissions);
+
             debugLog(`Permissions par défaut de la room ${roomId} mises à jour par ${user?.username}`);
 
-            // Broadcast les permissions mises à jour à tous les utilisateurs de la room
+            // ✅ IMPORTANT: Récupérer tous les utilisateurs de la room
+            const usersInRoom = anonymousUserStore.getUsersInRoom(roomId);
+
+            // ✅ Pour chaque utilisateur NON-ADMIN, appliquer les nouvelles permissions par défaut
+            usersInRoom.forEach((roomUser) => {
+                // Ne pas modifier l'admin
+                if (room.creatorId === roomUser.userId) {
+                    return;
+                }
+
+                // Vérifier si l'utilisateur a des permissions personnalisées sauvegardées
+                const savedPermissions = userPermissionsStore.getUserPermissions(roomId, roomUser.userId);
+
+                // Si pas de permissions sauvegardées (permissions par défaut), mettre à jour
+                if (!savedPermissions) {
+                    console.log(`Mise à jour des permissions par défaut pour ${roomUser.username}`);
+                    anonymousUserStore.updateUserPermissions(roomUser.userId, updatedRoom.defaultPermissions);
+                }
+            });
+
+            // ✅ Broadcaster les nouvelles permissions par défaut à TOUS
             io.to(roomId).emit('room-default-permissions-updated', {
                 roomId,
                 defaultPermissions: updatedRoom.defaultPermissions,
                 updatedBy: user.username
             });
 
+            // ✅ Ensuite, envoyer les permissions individuelles mises à jour
+            usersInRoom.forEach((roomUser) => {
+                if (room.creatorId !== roomUser.userId) {
+                    const savedPermissions = userPermissionsStore.getUserPermissions(roomId, roomUser.userId);
+                    const finalPermissions = savedPermissions || updatedRoom.defaultPermissions;
+
+                    io.to(roomId).emit('user-permissions-updated', {
+                        userId: roomUser.userId,
+                        username: roomUser.username,
+                        permissions: finalPermissions,
+                        updatedBy: user.username
+                    });
+                }
+            });
+
             socket.emit('update-room-permissions-success', {
                 message: 'Room permissions updated successfully'
             });
         } catch (error) {
+            console.error('Erreur update-room-permissions:', error);
             debugLog(`Erreur lors de la mise à jour des permissions de room: ${error}`);
             socket.emit('permissions-error', { error: error.message });
         }

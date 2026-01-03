@@ -13,30 +13,32 @@ export function SocketProvider({ children }) {
   });
 
   useEffect(() => {
-    // Récupérer les permissions quand l'utilisateur rejoint une room
+    if (!socket) return;
+
     const handleRoomJoined = (data) => {
       console.log('Room joined, user data:', data);
       if (data.user?.permissionsSet) {
-        console.log('Mise à jour des permissions:', data.user.permissionsSet);
         setUserPermissions(data.user.permissionsSet);
       }
     };
 
-    // ✅ IMPORTANT: Quand les permissions PERSONNELLES changent, mettre à jour
     const handleUserPermissionsUpdated = (data) => {
       console.log('User permissions updated:', data);
-      // Vérifier si c'est l'utilisateur courant
       const currentUserId = localStorage.getItem('anonymousUserId');
       if (data.userId === currentUserId) {
-        console.log('Mes permissions ont changé:', data.permissions);
+        console.log('✅ Mes permissions ont changé:', data.permissions);
         setUserPermissions(data.permissions);
       }
     };
 
-    // ✅ Les permissions par défaut de la room NE changent PAS les permissions personnelles
+    // ✅ NOUVEAU: Gérer la mise à jour des permissions par défaut
     const handleRoomDefaultPermissionsUpdated = (data) => {
       console.log('Room default permissions updated:', data);
-      // Ne rien faire - les permissions par défaut ne s'appliquent qu'aux nouveaux utilisateurs
+      const currentUserId = localStorage.getItem('anonymousUserId');
+      const currentUser = data; // À adapter selon votre contexte
+
+      // Les permissions par défaut s'appliquent seulement si l'utilisateur n'a pas de permissions personnalisées
+      // Cela sera géré par user-permissions-updated qui sera envoyé après
     };
 
     socket.on('room-joined', handleRoomJoined);
@@ -48,7 +50,7 @@ export function SocketProvider({ children }) {
       socket.off('user-permissions-updated', handleUserPermissionsUpdated);
       socket.off('room-default-permissions-updated', handleRoomDefaultPermissionsUpdated);
     };
-  }, []);
+  }, [socket]);
 
   return (
     <SocketContext.Provider value={{ socket, userPermissions, setUserPermissions }}>

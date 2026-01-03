@@ -3,26 +3,20 @@ import BottomMenu from "@/components/BottomMenu/BottomMenu";
 
 export default function MainLayout({ video, chat, users, playlist, search, history, activities, permissions }) {
     return (
-        <div className="min-h-screen bg-zen-bg dark:bg-zen-dark-bg text-zen-text dark:text-zen-dark-text flex flex-col">
-            {/* Main Content Area */}
-            <main className="flex-1 max-w-[1600px] w-full mx-auto p-6">
-                <div className="flex gap-6">
-                    {/* LEFT/CENTER AREA */}
-                    <div className="flex-1 flex flex-col gap-6">
+        <div className="w-full h-screen flex flex-col overflow-hidden bg-zen-bg dark:bg-zen-dark-bg">
+            {/* Header */}
+            <div className="flex-shrink-0">
+                {/* header content si besoin */}
+            </div>
 
-                        {/* Search & Video Section */}
-                        <div className="flex flex-col gap-6">
-                            {/* Search Bar */}
-                            <div className="relative group w-full">
-                                {search}
-                            </div>
-
-                            {/* Video Player */}
-                            <div className="bg-white dark:bg-zen-dark-surface p-2 rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
-                                <div className="w-full aspect-video bg-black rounded-xl overflow-hidden">
-                                    {video}
-                                </div>
-                            </div>
+            {/* Main content scrollable */}
+            <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] xl:grid-cols-[1fr_400px] gap-6 p-6 max-w-[1600px] mx-auto mb-20 min-h-full">
+                    {/* LEFT & CENTER PANELS - Scrollable */}
+                    <div className="space-y-6">
+                        {/* Video Player */}
+                        <div className="bg-black rounded-2xl shadow-sm overflow-hidden w-full aspect-video">
+                            {video}
                         </div>
 
                         {/* Bottom Panel - Users, Activities, Permissions */}
@@ -32,8 +26,8 @@ export default function MainLayout({ video, chat, users, playlist, search, histo
                     </div>
 
                     {/* RIGHT PANEL - Chat & Playlist (STICKY) */}
-                    <div className="hidden lg:block w-[350px] xl:w-[400px]">
-                        <div className="sticky top-6 w-[350px] xl:w-[400px] h-[calc(100vh-8rem)] bg-white dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-2xl shadow-sm overflow-hidden">
+                    <div className="hidden lg:block">
+                        <div className="sticky top-6 w-[350px] xl:w-[400px] h-[calc(100vh-8rem)] bg-white dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
                             <ChatSidebar chat={chat} playlist={playlist} history={history} />
                         </div>
                     </div>
