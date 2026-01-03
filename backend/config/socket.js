@@ -49,13 +49,21 @@ function initializeSocket(server, allowedOrigins) {
     debugLog(`Nouveau client connecté: ${socket.id}`);
 
     const existingUserId = socket.handshake.auth.userId;
+    const username = socket.handshake.auth.username || null;
     let user;
+
     if (existingUserId && anonymousUserStore.userExists(existingUserId)) {
+      // L'utilisateur existe déjà dans le store (reconnexion rapide)
       anonymousUserStore.updateSocketId(existingUserId, socket.id);
       user = anonymousUserStore.getUserById(existingUserId);
       debugLog(`Utilisateur existant reconnecté: ${user.username}`);
+    } else if (existingUserId) {
+      // L'userId existe en localStorage mais pas dans le store (après redémarrage serveur)
+      // On restaure l'utilisateur avec son ancien userId pour préserver son statut d'admin
+      user = anonymousUserStore.restoreOrCreateUser(socket.id, existingUserId, username);
+      debugLog(`Utilisateur restauré après redémarrage: ${user.username} (${existingUserId})`);
     } else {
-      const username = socket.handshake.auth.username || null;
+      // Nouvel utilisateur sans userId existant
       user = anonymousUserStore.createUser(socket.id, username);
       debugLog(`Nouvel utilisateur créé: ${user.username}`);
     }

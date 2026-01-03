@@ -54,6 +54,40 @@ class AnonymousUserStore {
     }
 
     /**
+     * Restaure ou crée un utilisateur avec un userId spécifique
+     * Utilisé pour restaurer un utilisateur après un redémarrage du serveur
+     * @param {string} socketId - ID du socket
+     * @param {string} userId - ID de l'utilisateur à restaurer
+     * @param {string} username - Nom d'utilisateur (optionnel)
+     * @returns {object} Utilisateur créé/restauré
+     */
+    restoreOrCreateUser(socketId, userId, username = null) {
+        const user = {
+            userId,
+            socketId,
+            username: username || `User${userId.substring(0, 8)}`,
+            connectedAt: new Date(),
+            lastActivity: new Date(),
+            disconnectedAt: null,
+            currentRoomId: null,
+            permissionsSet: {
+                editPermissions: false,
+                sendMessages: true,
+                deleteMessages: false,
+                changeVideo: true,
+                interactionVideo: true
+            },
+            customPermissions: null
+        };
+
+        this.users.set(userId, user);
+        this.socketToUser.set(socketId, userId);
+
+        debugLog(`Utilisateur restauré/créé avec userId existant: ${userId} (socket: ${socketId})`);
+        return user;
+    }
+
+    /**
      * Récupère un utilisateur par son userId
      * @param {string} userId - ID de l'utilisateur
      * @returns {object|null} Utilisateur ou null
