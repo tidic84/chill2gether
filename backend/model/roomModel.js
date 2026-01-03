@@ -171,6 +171,15 @@ async function decrementUserCount(roomId) {
   return result.rowCount > 0;
 }
 
+async function isRoomCreator(userId, roomId) {
+  const result = await query(
+    "SELECT id FROM room WHERE id = $1 AND owner_id = $2",
+    [roomId, userId]
+  );
+
+  return result.rows.length > 0;
+}
+
 async function deleteInactiveRooms() {
   // Supprimer les salles selon deux règles :
   // - Règle 1: Salles vides (user_count = 0) inactives depuis plus d'1 heure
@@ -211,5 +220,6 @@ module.exports = {
   incrementUserCount,
   decrementUserCount,
   deleteInactiveRooms,
-  updateDefaultPermissions
+  updateDefaultPermissions,
+  isRoomCreator
 };
