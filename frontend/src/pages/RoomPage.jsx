@@ -125,14 +125,21 @@ export default function RoomPage() {
 
     // Écouter les mises à jour de la liste des utilisateurs
     useEffect(() => {
-        socket.on('update-users', (data) => {
-            setUsers(data);
-        });
+        const handleUpdateUsers = (data) => {
+            const currentUserId = localStorage.getItem('anonymousUserId');
+            const enrichedUsers = data.map(user => ({
+                ...user,
+                isAdmin: user.userId === roomData?.creatorId
+            }));
+            setUsers(enrichedUsers);
+        };
+
+        socket.on('update-users', handleUpdateUsers);
 
         return () => {
             socket.off('update-users');
         };
-    }, [socket]);
+    }, [socket, roomData]);
 
     // Écouter l'état initial de la playlist
     useEffect(() => {
@@ -192,7 +199,7 @@ export default function RoomPage() {
 
             setCurrentVideoIndex(data.videoIndex);
             setCurrentVideoUrl(data.video.url);
-            setShouldAutoplay(true); 
+            setShouldAutoplay(true);
         };
 
         socket.on('video-changed', handleVideoChanged);
@@ -511,3 +518,4 @@ export default function RoomPage() {
 
     return null;
 }
+
