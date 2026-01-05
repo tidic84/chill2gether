@@ -320,40 +320,7 @@ function initializePlaylistHandlers(io, socket) {
         }
     });
 
-    /**
-     * CHAT-MESSAGE
-     * Vérifier la permission sendMessages
-     */
-    socket.on('chat-message', ({ roomId, message }) => {
-        const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-
-        if (!currentUser) {
-            debugLog(`Utilisateur non trouvé pour le socket ${socket.id}`);
-            return;
-        }
-
-        // Vérifier la permission sendMessages
-        if (!currentUser.permissionsSet.sendMessages) {
-            socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit d\'envoyer des messages' });
-            return;
-        }
-
-        if (!roomId || !message || !message.trim()) {
-            debugLog(`Message invalide reçu de ${currentUser.username}`);
-            return;
-        }
-
-        const chatMessage = {
-            userId: currentUser.userId,
-            username: currentUser.username,
-            message: message.trim(),
-            timestamp: new Date().toISOString(),
-            roomId: roomId
-        };
-
-        debugLog(`Message reçu de ${currentUser.username} dans la room ${roomId}: ${message}`);
-        io.to(roomId).emit("chat-message", chatMessage);
-    });
+    
 }
 
 module.exports = { initializePlaylistHandlers };

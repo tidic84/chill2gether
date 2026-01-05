@@ -51,12 +51,37 @@ export default function TutorialOverlay() {
         setTargetPosition(position);
         setIsVisible(true);
 
-        // scroll automatique vers l element s il n est pas visible
-        element.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-            inline: "center",
-        });
+        // Trouver le conteneur scrollable (le main)
+        const scrollContainer = document.querySelector('main');
+        
+        if (scrollContainer) {
+            // Calculer si l'élément est visible
+            const containerRect = scrollContainer.getBoundingClientRect();
+            const elementRect = element.getBoundingClientRect();
+            
+            // Vérifier si l'élément n'est pas complètement visible
+            const isAboveViewport = elementRect.top < containerRect.top + 100;
+            const isBelowViewport = elementRect.bottom > containerRect.bottom - 100;
+            
+            if (isAboveViewport || isBelowViewport) {
+                // Calculer la position de scroll cible
+                const elementOffsetTop = element.offsetTop;
+                const containerHeight = scrollContainer.clientHeight;
+                const elementHeight = element.offsetHeight;
+                
+                // Centrer l'élément, mais ne pas dépasser le max scroll
+                let targetScroll = elementOffsetTop - (containerHeight / 2) + (elementHeight / 2);
+                
+                // Limiter le scroll au maximum disponible
+                const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+                targetScroll = Math.min(Math.max(0, targetScroll), maxScroll);
+                
+                scrollContainer.scrollTo({
+                    top: targetScroll,
+                    behavior: "smooth"
+                });
+            }
+        }
 
         // fonction pour recalculer la position lors du scroll/resize
         const updatePosition = () => {
@@ -70,14 +95,21 @@ export default function TutorialOverlay() {
             setTargetPosition(position);
         };
 
-        // ecouter les evenements scroll et resize
-        window.addEventListener("scroll", updatePosition);
+        // Écouter le scroll du conteneur main et window
+        window.addEventListener("scroll", updatePosition, true);
         window.addEventListener("resize", updatePosition);
+        
+        if (scrollContainer) {
+            scrollContainer.addEventListener("scroll", updatePosition);
+        }
 
         // nettoyage : retirer les listeners quand le composant se demonte
         return () => {
-            window.removeEventListener("scroll", updatePosition);
+            window.removeEventListener("scroll", updatePosition, true);
             window.removeEventListener("resize", updatePosition);
+            if (scrollContainer) {
+                scrollContainer.removeEventListener("scroll", updatePosition);
+            }
         };
     }, [isActive, currentStepData]);
 
