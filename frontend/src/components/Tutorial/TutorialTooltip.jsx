@@ -56,7 +56,7 @@ export default function TutorialTooltip({ step, targetPosition, placement }) {
 
     return (
         <div
-            className="absolute bg-white dark:bg-zen-dark-surface rounded-2xl shadow-2xl p-6 max-w-sm border border-zen-border dark:border-zen-dark-border animate-[slideIn_300ms_ease-out] z-10"
+            className="absolute bg-white dark:bg-zen-dark-surface rounded-2xl shadow-2xl p-6 max-w-sm border border-zen-border dark:border-zen-dark-border animate-[slideIn_300ms_ease-out] z-10 pointer-events-auto"
             style={tooltipStyle}
         >
             {/* header avec progression et bouton fermer */}

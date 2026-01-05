@@ -57,16 +57,20 @@ export default function Chat() {
     useEffect(() => {
         if (!roomId) return;
 
+        let isMounted = true; // Flag pour éviter les doubles listeners
+
         const handleChatMessage = (msg) => {
+            if (!isMounted) return; // Ignorer si le composant est démonté
             setMessages((prev) => [...prev, msg]);
         };
 
         socket.on("chat-message", handleChatMessage);
 
         return () => {
+            isMounted = false;
             socket.off("chat-message", handleChatMessage);
         };
-    }, [roomId]);
+    }, [roomId, socket]); // Ajoutez socket dans les dépendances
 
     // Envoi d'un message
     const sendMessage = () => {

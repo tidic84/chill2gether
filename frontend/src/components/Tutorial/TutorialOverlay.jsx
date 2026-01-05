@@ -84,15 +84,21 @@ export default function TutorialOverlay() {
         }
 
         // fonction pour recalculer la position lors du scroll/resize
+        let throttleTimeout = null;
         const updatePosition = () => {
-            const rect = element.getBoundingClientRect();
-            const position = {
-                x: rect.x - padding,
-                y: rect.y - padding,
-                width: rect.width + padding * 2,
-                height: rect.height + padding * 2,
-            };
-            setTargetPosition(position);
+            if (throttleTimeout) return; // Skip si déjà en cours
+            
+            throttleTimeout = setTimeout(() => {
+                const rect = element.getBoundingClientRect();
+                const position = {
+                    x: rect.x - padding,
+                    y: rect.y - padding,
+                    width: rect.width + padding * 2,
+                    height: rect.height + padding * 2,
+                };
+                setTargetPosition(position);
+                throttleTimeout = null;
+            }, 100); // Throttle à 100ms
         };
 
         // Écouter le scroll du conteneur main et window
@@ -105,6 +111,7 @@ export default function TutorialOverlay() {
 
         // nettoyage : retirer les listeners quand le composant se demonte
         return () => {
+            if (throttleTimeout) clearTimeout(throttleTimeout);
             window.removeEventListener("scroll", updatePosition, true);
             window.removeEventListener("resize", updatePosition);
             if (scrollContainer) {
@@ -121,7 +128,7 @@ export default function TutorialOverlay() {
     // afficher l overlay avec createPortal
     return createPortal(
         <div
-            className={`fixed inset-0 z-[9999] transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0"
+            className={`fixed inset-0 z-[9999] pointer-events-none transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0"
                 }`}
         >
             {/* le spotlight (cercle de lumiere) avec son box-shadow qui crée l'effet sombre */}

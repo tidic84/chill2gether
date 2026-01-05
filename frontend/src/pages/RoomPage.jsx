@@ -265,7 +265,7 @@ export default function RoomPage() {
 
     //tuto automatique
     useEffect(() => {
-        if (roomState === 'authenticated') {
+        if (roomState === 'authenticated' && !showUsernamePopup) {
             // Délai de 1 seconde pour laisser le temps aux éléments de se charger
             const timer = setTimeout(() => {
                 startTutorial('room');
@@ -273,7 +273,7 @@ export default function RoomPage() {
 
             return () => clearTimeout(timer);
         }
-    }, [roomState, startTutorial]);
+    }, [roomState, showUsernamePopup, startTutorial]);
 
     // Gérer la fin de la vidéo
     const handleVideoEnded = () => {
