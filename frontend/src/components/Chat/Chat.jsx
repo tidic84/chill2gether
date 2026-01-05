@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { Send, Smile } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import socket from "../../services/socket";
+import { usePermissions } from "../../contexts/SocketContext";
 
 export default function Chat() {
     const [messages, setMessages] = useState([]);
@@ -13,6 +14,7 @@ export default function Chat() {
     const messagesEndRef = useRef(null);
     const emojiPickerRef = useRef(null);
     const { roomId } = useParams();
+    const permissions = usePermissions();
 
     function autoResize(textarea) {
         textarea.style.height = "auto";
@@ -68,7 +70,7 @@ export default function Chat() {
 
     // Envoi d'un message
     const sendMessage = () => {
-        if (input.trim() && roomId) {
+        if (input.trim() && roomId && permissions?.sendMessages) {
             socket.emit("chat-message", {
                 roomId,
                 message: input
@@ -82,6 +84,8 @@ export default function Chat() {
         const date = new Date(timestamp);
         return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     };
+
+    const canSendMessages = permissions?.sendMessages !== false;
 
     // Handle emoji selection
     const handleEmojiClick = (emojiData) => {
@@ -141,6 +145,7 @@ export default function Chat() {
 
             {/* Input Area */}
             <div className="p-4 bg-white dark:bg-zen-dark-surface mt-auto border-t border-zen-warm-stone relative">
+
                 {/* Emoji Picker */}
                 {showEmojiPicker && (
                     <div
@@ -155,45 +160,51 @@ export default function Chat() {
                     </div>
                 )}
 
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        sendMessage();
-                    }}
-                    className="flex gap-2 bg-zen-surface dark:bg-zen-dark-surface p-1.5 rounded-full border border-zen-border dark:border-zen-dark-border focus-within:border-zen-clay focus-within:ring-2 focus-within:ring-zen-clay/10 transition-all shadow-sm"
-                >
-                    <input
-                        ref={textareaRef}
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 text-zen-text dark:text-zen-dark-text placeholder-zen-stone outline-none"
-                        placeholder="Écrire un message..."
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                sendMessage();
-                            }
+                {!canSendMessages ? (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
+                        <i className="fa-solid fa-lock"></i>
+                        Vous n'avez pas la permission d'envoyer des messages
+                    </div>
+                ) : (
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            sendMessage();
                         }}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        className={`p-2 rounded-full transition-colors ${
-                            showEmojiPicker
-                                ? 'text-zen-terracotta bg-zen-cream'
-                                : 'text-zen-stone dark:text-zen-dark-stone hover:text-zen-terracotta hover:bg-zen-cream'
-                        }`}
+                        className="flex gap-2 bg-zen-surface dark:bg-zen-dark-surface p-1.5 rounded-full border border-zen-border dark:border-zen-dark-border focus-within:border-zen-clay focus-within:ring-2 focus-within:ring-zen-clay/10 transition-all shadow-sm"
                     >
-                        <Smile size={20} />
-                    </button>
-                    <button
-                        type="submit"
-                        className="p-2 bg-zen-sage dark:bg-zen-dark-sage text-white rounded-full hover:bg-zen-sage dark:bg-zen-dark-sage/80 transition-all shadow-md center-content"
-                    >
-                        <Send size={16} className="mx-0.5" />
-                    </button>
-                </form>
+                        <input
+                            ref={textareaRef}
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 text-zen-text dark:text-zen-dark-text placeholder-zen-stone outline-none"
+                            placeholder="Écrire un message..."
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    sendMessage();
+                                }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                            className={`p-2 rounded-full transition-colors ${showEmojiPicker
+                                    ? 'text-zen-terracotta bg-zen-cream'
+                                    : 'text-zen-stone dark:text-zen-dark-stone hover:text-zen-terracotta hover:bg-zen-cream'
+                                }`}
+                        >
+                            <Smile size={20} />
+                        </button>
+                        <button
+                            type="submit"
+                            className="p-2 bg-zen-sage dark:bg-zen-dark-sage text-white rounded-full hover:bg-zen-sage dark:bg-zen-dark-sage/80 transition-all shadow-md center-content"
+                        >
+                            <Send size={16} className="mx-0.5" />
+                        </button>
+                    </form>
+                )}
             </div>
         </div>
     );

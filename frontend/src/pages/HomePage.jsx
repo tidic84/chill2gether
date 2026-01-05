@@ -7,6 +7,7 @@ import GridMotion from "../components/GridMotion/GridMotion";
 import { useSocket } from "../contexts/SocketContext";
 import { useAuth } from "../contexts/AuthContext";
 import { roomApi } from "../services/api";
+import ThemeToggle from "../components/ThemeToggle/ThemeToggle";
 
 export default function HomePage() {
     const [showTutorial, setShowTutorial] = useState(false);
@@ -96,13 +97,13 @@ export default function HomePage() {
     };
 
     return (
-        <div className="flex flex-col h-screen selection:bg-zen-sage/20 selection:text-zen-sage dark:selection:bg-zen-dark-sage/20 dark:selection:text-zen-dark-sage overflow-hidden dark:bg-zen-dark-bg">
+        <div className="flex flex-col h-screen selection:bg-zen-sage/20 selection:text-zen-sage dark:selection:bg-zen-dark-sage/20 dark:selection:text-zen-dark-sage overflow-hidden relative">
             {/* Background Ambiance */}
             <div className="organic-shape shape-sage"></div>
             <div className="organic-shape shape-clay"></div>
 
             {/* Navbar */}
-            <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent">
+            <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent relative">
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
                     <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-mug-hot text-lg"></i>
@@ -113,7 +114,8 @@ export default function HomePage() {
                     </h1>
                 </Link>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
+                    <ThemeToggle />
                     {isAuthenticated ? (
                         <Link
                             to="/profile"
@@ -142,7 +144,8 @@ export default function HomePage() {
             </nav>
 
             {/* Main Content */}
-            <main className="flex-grow flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-4xl mx-auto">
+            <main className="flex-grow flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-4xl mx-auto pointer-events-none">
+                <div className="w-full pointer-events-auto">
                 <div className="w-full text-center flex flex-col items-center">
                     {/* Badge */}
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border text-xs font-bold text-zen-stone dark:text-zen-dark-stone shadow-sm mb-6">
@@ -254,6 +257,7 @@ export default function HomePage() {
                             title="Musique"
                         ></i>
                     </div>
+                </div>
                 </div>
             </main>
 

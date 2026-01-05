@@ -22,18 +22,21 @@ async function generateRoomId() {
   return roomId;
 }
 
-async function createRoom(
-  creatorId,
-  requiresPassword = false,
-  password = null,
-) {
+async function createRoom(creatorId, requiresPassword = false, password = null) {
   const roomId = await generateRoomId();
+  const defaultPermissions = {
+    editPermissions: false,
+    sendMessages: true,
+    deleteMessages: false,
+    changeVideo: true,
+    interactionVideo: true
+  };
 
   const result = await query(
-    `INSERT INTO room (id, owner_id, requires_password, password, created_at)
-         VALUES ($1, $2, $3, $4, NOW())
-         RETURNING id, owner_id, requires_password, created_at`,
-    [roomId, creatorId, requiresPassword, password],
+    `INSERT INTO room (id, owner_id, requires_password, password, default_permissions, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         RETURNING id, owner_id, requires_password, default_permissions, created_at`,
+    [roomId, creatorId, requiresPassword, password, JSON.stringify(defaultPermissions)]
   );
 
   const room = result.rows[0];
@@ -42,14 +45,15 @@ async function createRoom(
     id: room.id,
     creatorId: room.owner_id,
     requiresPassword: room.requires_password,
-    createdAt: room.created_at,
+    defaultPermissions: room.default_permissions,
+    createdAt: room.created_at
   };
 }
 
 async function getRoomById(roomId, includePassword = false) {
   const fields = includePassword
-    ? "id, owner_id, requires_password, password, created_at"
-    : "id, owner_id, requires_password, created_at";
+    ? 'id, owner_id, requires_password, password, default_permissions, created_at'
+    : 'id, owner_id, requires_password, default_permissions, created_at';
 
   const result = await query(`SELECT ${fields} FROM room WHERE id = $1`, [
     roomId,
@@ -65,8 +69,30 @@ async function getRoomById(roomId, includePassword = false) {
     id: room.id,
     creatorId: room.owner_id,
     requiresPassword: room.requires_password,
+    defaultPermissions: room.default_permissions,
     ...(includePassword && { password: room.password }),
-    createdAt: room.created_at,
+    createdAt: room.created_at
+  };
+}
+
+async function updateDefaultPermissions(roomId, permissions) {
+  const result = await query(
+    `UPDATE room 
+         SET default_permissions = $1 
+         WHERE id = $2 
+         RETURNING id, owner_id, default_permissions`,
+    [JSON.stringify(permissions), roomId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error('Room not found');
+  }
+
+  const room = result.rows[0];
+  return {
+    id: room.id,
+    creatorId: room.owner_id,
+    defaultPermissions: room.default_permissions
   };
 }
 
@@ -145,6 +171,15 @@ async function decrementUserCount(roomId) {
   return result.rowCount > 0;
 }
 
+async function isRoomCreator(userId, roomId) {
+  const result = await query(
+    "SELECT id FROM room WHERE id = $1 AND owner_id = $2",
+    [roomId, userId]
+  );
+
+  return result.rows.length > 0;
+}
+
 async function deleteInactiveRooms() {
   // Supprimer les salles selon deux règles :
   // - Règle 1: Salles vides (user_count = 0) inactives depuis plus d'1 heure
@@ -185,4 +220,6 @@ module.exports = {
   incrementUserCount,
   decrementUserCount,
   deleteInactiveRooms,
+  updateDefaultPermissions,
+  isRoomCreator
 };

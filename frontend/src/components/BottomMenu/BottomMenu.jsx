@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Permissions from "../Permissions/Permissions";
 
 export default function BottomMenu({ users, activities, permissions }) {
     const [activeTab, setActiveTab] = useState("users");
@@ -12,9 +13,8 @@ export default function BottomMenu({ users, activities, permissions }) {
             <div className="flex border-b border-zen-border dark:border-zen-dark-border px-6 pt-4">
                 <button
                     onClick={() => setActiveTab("users")}
-                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative mr-6 ${
-                        activeTab === "users" ? "text-zen-sage dark:text-zen-dark-sage" : "text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:hover:text-zen-dark-stone"
-                    }`}
+                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative mr-6 ${activeTab === "users" ? "text-zen-sage dark:text-zen-dark-sage" : "text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:hover:text-zen-dark-stone"
+                        }`}
                 >
                     Utilisateurs
                     {activeTab === "users" && (
@@ -23,9 +23,8 @@ export default function BottomMenu({ users, activities, permissions }) {
                 </button>
                 <button
                     onClick={() => setActiveTab("activities")}
-                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative mr-6 ${
-                        activeTab === "activities" ? "text-zen-sage dark:text-zen-dark-sage" : "text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:hover:text-zen-dark-stone"
-                    }`}
+                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative mr-6 ${activeTab === "activities" ? "text-zen-sage dark:text-zen-dark-sage" : "text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:hover:text-zen-dark-stone"
+                        }`}
                 >
                     Activités
                     {activeTab === "activities" && (
@@ -34,9 +33,8 @@ export default function BottomMenu({ users, activities, permissions }) {
                 </button>
                 <button
                     onClick={() => setActiveTab("permissions")}
-                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative ${
-                        activeTab === "permissions" ? "text-zen-sage dark:text-zen-dark-sage" : "text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:hover:text-zen-dark-stone"
-                    }`}
+                    className={`pb-4 px-2 text-sm font-semibold transition-colors relative ${activeTab === "permissions" ? "text-zen-sage dark:text-zen-dark-sage" : "text-zen-stone dark:text-zen-dark-stone hover:text-zen-stone dark:hover:text-zen-dark-stone"
+                        }`}
                 >
                     Paramètres
                     {activeTab === "permissions" && (
@@ -49,7 +47,7 @@ export default function BottomMenu({ users, activities, permissions }) {
             <div className="p-6 bg-zen-surface dark:bg-zen-dark-surface flex-1 overflow-y-auto">
                 {activeTab === "users" && users}
                 {activeTab === "activities" && activities}
-                {activeTab === "permissions" && permissions}
+                {activeTab === "permissions" && <Permissions />}
             </div>
         </div>
     );

@@ -168,14 +168,14 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-zen-bg">
-                <i className="fa-solid fa-circle-notch fa-spin text-4xl text-zen-sage"></i>
+            <div className="flex items-center justify-center h-screen">
+                <i className="fa-solid fa-circle-notch fa-spin text-4xl text-zen-sage dark:text-zen-dark-sage"></i>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col min-h-screen selection:bg-zen-sage/20 selection:text-zen-sage overflow-hidden bg-zen-bg">
+        <div className="flex flex-col min-h-screen selection:bg-zen-sage/20 selection:text-zen-sage dark:selection:bg-zen-dark-sage/20 dark:selection:text-zen-dark-sage overflow-hidden relative">
             {/* Background Ambiance */}
             <div className="organic-shape shape-sage"></div>
             <div className="organic-shape shape-clay"></div>
@@ -183,17 +183,17 @@ export default function ProfilePage() {
             {/* Navbar */}
             <nav className="w-full z-50 py-6 px-8 flex justify-between items-center fixed top-0 left-0 bg-transparent">
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-                    <div className="w-10 h-10 bg-zen-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-mug-hot text-lg"></i>
                     </div>
-                    <h1 className="text-xl font-bold tracking-tight text-zen-text">
-                        chill<span className="text-zen-muted font-medium">2gether</span>
+                    <h1 className="text-xl font-bold tracking-tight text-zen-text dark:text-zen-dark-text">
+                        chill<span className="text-zen-muted dark:text-zen-dark-muted font-medium">2gether</span>
                     </h1>
                 </Link>
 
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted hover:text-zen-sage transition-colors"
+                    className="flex items-center gap-2 text-sm font-semibold text-zen-muted dark:text-zen-dark-muted hover:text-zen-sage dark:hover:text-zen-dark-sage transition-colors"
                 >
                     <i className="fa-solid fa-arrow-left"></i>
                     <span className="hidden md:inline">Retour</span>
@@ -202,16 +202,16 @@ export default function ProfilePage() {
 
             {/* Main Content */}
             <main className="flex-grow flex flex-col justify-center items-center px-6 relative z-10 w-full max-w-2xl mx-auto pt-24 pb-12">
-                <div className="w-full bg-white rounded-3xl shadow-lg border border-zen-border p-8">
+                <div className="w-full bg-white dark:bg-zen-dark-surface rounded-3xl shadow-lg border border-zen-border dark:border-zen-dark-border p-8">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-zen-sage/10 rounded-2xl flex items-center justify-center">
-                                <i className="fa-solid fa-user text-3xl text-zen-sage"></i>
+                            <div className="w-16 h-16 bg-zen-sage/10 dark:bg-zen-dark-sage/10 rounded-2xl flex items-center justify-center">
+                                <i className="fa-solid fa-user text-3xl text-zen-sage dark:text-zen-dark-sage"></i>
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-zen-text">Mon profil</h1>
-                                <p className="text-zen-muted text-sm">Gérez vos informations personnelles</p>
+                                <h1 className="text-2xl font-bold text-zen-text dark:text-zen-dark-text">Mon profil</h1>
+                                <p className="text-zen-muted dark:text-zen-dark-muted text-sm">Gérez vos informations personnelles</p>
                             </div>
                         </div>
                     </div>
@@ -235,48 +235,48 @@ export default function ProfilePage() {
                     {user && !isEditing && (
                         <div className="space-y-4">
                             {/* Email */}
-                            <div className="flex items-center justify-between p-4 bg-zen-surface rounded-xl border border-zen-border">
+                            <div className="flex items-center justify-between p-4 bg-zen-surface dark:bg-zen-dark-surface rounded-xl border border-zen-border dark:border-zen-dark-border">
                                 <div className="flex-1">
-                                    <label className="block text-xs font-bold text-zen-muted uppercase tracking-wide mb-1">
+                                    <label className="block text-xs font-bold text-zen-muted dark:text-zen-dark-muted uppercase tracking-wide mb-1">
                                         Email
                                     </label>
-                                    <p className="text-zen-text font-medium">{user.email}</p>
+                                    <p className="text-zen-text dark:text-zen-dark-text font-medium">{user.email}</p>
                                 </div>
                                 <button
                                     onClick={() => startEdit("email", user.email)}
-                                    className="ml-4 text-zen-sage hover:text-zen-sage/80 transition-colors"
+                                    className="ml-4 text-zen-sage dark:text-zen-dark-sage hover:text-zen-sage/80 dark:hover:text-zen-dark-sage/80 transition-colors"
                                 >
                                     <i className="fa-solid fa-pen-to-square"></i>
                                 </button>
                             </div>
 
                             {/* Username */}
-                            <div className="flex items-center justify-between p-4 bg-zen-surface rounded-xl border border-zen-border">
+                            <div className="flex items-center justify-between p-4 bg-zen-surface dark:bg-zen-dark-surface rounded-xl border border-zen-border dark:border-zen-dark-border">
                                 <div className="flex-1">
-                                    <label className="block text-xs font-bold text-zen-muted uppercase tracking-wide mb-1">
+                                    <label className="block text-xs font-bold text-zen-muted dark:text-zen-dark-muted uppercase tracking-wide mb-1">
                                         Nom d&apos;utilisateur
                                     </label>
-                                    <p className="text-zen-text font-medium">{user.username || "Non défini"}</p>
+                                    <p className="text-zen-text dark:text-zen-dark-text font-medium">{user.username || "Non défini"}</p>
                                 </div>
                                 <button
                                     onClick={() => startEdit("username", user.username)}
-                                    className="ml-4 text-zen-sage hover:text-zen-sage/80 transition-colors"
+                                    className="ml-4 text-zen-sage dark:text-zen-dark-sage hover:text-zen-sage/80 dark:hover:text-zen-dark-sage/80 transition-colors"
                                 >
                                     <i className="fa-solid fa-pen-to-square"></i>
                                 </button>
                             </div>
 
                             {/* Mot de passe */}
-                            <div className="flex items-center justify-between p-4 bg-zen-surface rounded-xl border border-zen-border">
+                            <div className="flex items-center justify-between p-4 bg-zen-surface dark:bg-zen-dark-surface rounded-xl border border-zen-border dark:border-zen-dark-border">
                                 <div className="flex-1">
-                                    <label className="block text-xs font-bold text-zen-muted uppercase tracking-wide mb-1">
+                                    <label className="block text-xs font-bold text-zen-muted dark:text-zen-dark-muted uppercase tracking-wide mb-1">
                                         Mot de passe
                                     </label>
-                                    <p className="text-zen-text font-medium">••••••••</p>
+                                    <p className="text-zen-text dark:text-zen-dark-text font-medium">••••••••</p>
                                 </div>
                                 <button
                                     onClick={() => startEdit("password", "")}
-                                    className="ml-4 text-zen-sage hover:text-zen-sage/80 transition-colors"
+                                    className="ml-4 text-zen-sage dark:text-zen-dark-sage hover:text-zen-sage/80 dark:hover:text-zen-dark-sage/80 transition-colors"
                                 >
                                     <i className="fa-solid fa-pen-to-square"></i>
                                 </button>
@@ -284,11 +284,11 @@ export default function ProfilePage() {
 
                             {/* Date de création */}
                             {user.created_at && (
-                                <div className="p-4 bg-zen-surface rounded-xl border border-zen-border">
-                                    <label className="block text-xs font-bold text-zen-muted uppercase tracking-wide mb-1">
+                                <div className="p-4 bg-zen-surface dark:bg-zen-dark-surface rounded-xl border border-zen-border dark:border-zen-dark-border">
+                                    <label className="block text-xs font-bold text-zen-muted dark:text-zen-dark-muted uppercase tracking-wide mb-1">
                                         Membre depuis
                                     </label>
-                                    <p className="text-zen-text font-medium">
+                                    <p className="text-zen-text dark:text-zen-dark-text font-medium">
                                         {new Date(user.created_at).toLocaleDateString("fr-FR", {
                                             day: "numeric",
                                             month: "long",
@@ -304,12 +304,12 @@ export default function ProfilePage() {
                     {isEditing && (
                         <form onSubmit={saveEdit} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="block text-sm font-bold text-zen-text capitalize">
+                                <label className="block text-sm font-bold text-zen-text dark:text-zen-dark-text capitalize">
                                     {editField === "password" ? "Nouveau mot de passe" : editField}
                                 </label>
                                 <input
                                     type={editField === "password" ? "password" : editField === "email" ? "email" : "text"}
-                                    className="w-full px-4 py-3 bg-zen-surface border border-zen-border rounded-xl text-zen-text placeholder:text-zen-muted/60 focus:outline-none focus:border-zen-sage focus:ring-2 focus:ring-zen-sage/20 transition-all"
+                                    className="w-full px-4 py-3 bg-zen-surface dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-xl text-zen-text dark:text-zen-dark-text placeholder:text-zen-muted/60 dark:placeholder:text-zen-dark-muted/60 focus:outline-none focus:border-zen-sage focus:ring-2 focus:ring-zen-sage/20 transition-all"
                                     value={editValue}
                                     onChange={(e) => setEditValue(e.target.value)}
                                     placeholder={editField === "password" ? "Nouveau mot de passe" : `Modifier ${editField}`}
@@ -338,7 +338,7 @@ export default function ProfilePage() {
                                 <button
                                     type="button"
                                     onClick={cancelEdit}
-                                    className="flex-1 py-3 rounded-xl font-bold text-base bg-zen-surface hover:bg-zen-bg border border-zen-border text-zen-stone hover:text-zen-text transition-all"
+                                    className="flex-1 py-3 rounded-xl font-bold text-base bg-zen-surface dark:bg-zen-dark-surface hover:bg-zen-bg dark:hover:bg-zen-dark-bg border border-zen-border dark:border-zen-dark-border text-zen-stone dark:text-zen-dark-stone hover:text-zen-text dark:hover:text-zen-dark-text transition-all"
                                 >
                                     Annuler
                                 </button>
@@ -348,10 +348,10 @@ export default function ProfilePage() {
 
                     {/* Actions */}
                     {!isEditing && (
-                        <div className="mt-8 space-y-3 pt-6 border-t border-zen-border">
+                        <div className="mt-8 space-y-3 pt-6 border-t border-zen-border dark:border-zen-dark-border">
                             <button
                                 onClick={handleLogout}
-                                className="w-full py-3 rounded-xl font-bold text-base bg-zen-surface hover:bg-zen-bg border border-zen-border text-zen-stone hover:text-zen-text transition-all flex items-center justify-center gap-2"
+                                className="w-full py-3 rounded-xl font-bold text-base bg-zen-surface dark:bg-zen-dark-surface hover:bg-zen-bg dark:hover:bg-zen-dark-bg border border-zen-border dark:border-zen-dark-border text-zen-stone dark:text-zen-dark-stone hover:text-zen-text dark:hover:text-zen-dark-text transition-all flex items-center justify-center gap-2"
                             >
                                 <i className="fa-solid fa-arrow-right-from-bracket"></i>
                                 <span>Se déconnecter</span>
