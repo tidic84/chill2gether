@@ -4,7 +4,10 @@ export default function BottomMenu({ users, activities, permissions }) {
     const [activeTab, setActiveTab] = useState("users");
 
     return (
-        <div className="w-full h-full bg-white dark:bg-zen-dark-surface text-zen-text dark:text-zen-dark-text flex flex-col">
+        <div 
+            className="w-full h-full bg-white dark:bg-zen-dark-surface text-zen-text dark:text-zen-dark-text flex flex-col"
+            data-tutorial="bottom-menu"
+        >
             {/* Tab Navigation */}
             <div className="flex border-b border-zen-border dark:border-zen-dark-border px-6 pt-4">
                 <button

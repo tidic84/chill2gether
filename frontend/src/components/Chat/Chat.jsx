@@ -90,9 +90,11 @@ export default function Chat() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-zen-dark-surface relative">
+        <div className="flex flex-col h-full bg-white dark:bg-zen-dark-surface relative" data-tutorial="chat-sidebar">
             {/* Chat Header */}
-            <div className="p-3 flex justify-between items-center border-b border-zen-border dark:border-zen-dark-border">
+            <div 
+                className="p-3 flex justify-between items-center border-b border-zen-border dark:border-zen-dark-border"
+            >
                 <span className="text-xs font-bold text-zen-stone dark:text-zen-dark-stone uppercase tracking-widest px-2">
                     Live Chat
                 </span>
