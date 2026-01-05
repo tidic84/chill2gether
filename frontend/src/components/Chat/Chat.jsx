@@ -57,16 +57,20 @@ export default function Chat() {
     useEffect(() => {
         if (!roomId) return;
 
+        let isMounted = true; // Flag pour éviter les doubles listeners
+
         const handleChatMessage = (msg) => {
+            if (!isMounted) return; // Ignorer si le composant est démonté
             setMessages((prev) => [...prev, msg]);
         };
 
         socket.on("chat-message", handleChatMessage);
 
         return () => {
+            isMounted = false;
             socket.off("chat-message", handleChatMessage);
         };
-    }, [roomId]);
+    }, [roomId, socket]); // Ajoutez socket dans les dépendances
 
     // Envoi d'un message
     const sendMessage = () => {
@@ -94,9 +98,11 @@ export default function Chat() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-zen-dark-surface relative">
+        <div className="flex flex-col h-full bg-white dark:bg-zen-dark-surface relative" data-tutorial="chat-sidebar">
             {/* Chat Header */}
-            <div className="p-3 flex justify-between items-center border-b border-zen-border dark:border-zen-dark-border">
+            <div 
+                className="p-3 flex justify-between items-center border-b border-zen-border dark:border-zen-dark-border"
+            >
                 <span className="text-xs font-bold text-zen-stone dark:text-zen-dark-stone uppercase tracking-widest px-2">
                     Live Chat
                 </span>

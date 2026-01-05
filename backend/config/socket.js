@@ -1,8 +1,7 @@
 const { Server } = require("socket.io");
 const anonymousUserStore = require("../services/anonymousUserStore");
 const roomModel = require("../model/roomModel");
-const { debugLog } = require("../utils/utils");
-const { initializeChatHandlers } = require("../services/chatService");
+//const { initializeChatHandlers } = require("../services/chatService");
 const { initializePlaylistHandlers } = require("./handlers/playlistHandlers");
 const playlistService = require("../services/playlistService");
 const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
@@ -46,26 +45,17 @@ function initializeSocket(server, allowedOrigins) {
   }, 10000);
 
   io.on("connection", (socket) => {
-    debugLog(`Nouveau client connecté: ${socket.id}`);
-
     const existingUserId = socket.handshake.auth.userId;
     const username = socket.handshake.auth.username || null;
     let user;
 
     if (existingUserId && anonymousUserStore.userExists(existingUserId)) {
-      // L'utilisateur existe déjà dans le store (reconnexion rapide)
       anonymousUserStore.updateSocketId(existingUserId, socket.id);
       user = anonymousUserStore.getUserById(existingUserId);
-      debugLog(`Utilisateur existant reconnecté: ${user.username}`);
     } else if (existingUserId) {
-      // L'userId existe en localStorage mais pas dans le store (après redémarrage serveur)
-      // On restaure l'utilisateur avec son ancien userId pour préserver son statut d'admin
       user = anonymousUserStore.restoreOrCreateUser(socket.id, existingUserId, username);
-      debugLog(`Utilisateur restauré après redémarrage: ${user.username} (${existingUserId})`);
     } else {
-      // Nouvel utilisateur sans userId existant
       user = anonymousUserStore.createUser(socket.id, username);
-      debugLog(`Nouvel utilisateur créé: ${user.username}`);
     }
 
     socket.emit("user-registered", {
@@ -78,15 +68,13 @@ function initializeSocket(server, allowedOrigins) {
       count: anonymousUserStore.getUserCount(),
     });
 
-    // ✅ Initialiser les handlers UNE SEULE FOIS
-    initializeChatHandlers(io, socket);
+    //initializeChatHandlers(io, socket);
     initializePlaylistHandlers(io, socket);
     initializePermissionsHandlers(io, socket);
 
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
       if (currentUser) {
-        const oldUsername = currentUser.username;
         anonymousUserStore.updateUsername(currentUser.userId, newUsername);
         socket.emit("username-updated", { username: newUsername });
         if (socket.currentRoomId) {
@@ -100,12 +88,10 @@ function initializeSocket(server, allowedOrigins) {
     });
 
     socket.on("disconnect", async (reason) => {
-      debugLog(`Client déconnecté: ${socket.id} - Raison: ${reason}`);
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
 
       if (socket.currentRoomId) {
         await roomModel.decrementUserCount(socket.currentRoomId);
-        debugLog(`Compteur décrémenté pour la room ${socket.currentRoomId}`);
 
         if (currentUser) {
           anonymousUserStore.setUserRoom(currentUser.userId, null);
@@ -122,7 +108,6 @@ function initializeSocket(server, allowedOrigins) {
       }
     });
 
-    // ✅ UN SEUL join-room
     socket.on("join-room", async (data) => {
       const roomId = typeof data === "string" ? data : data.roomId;
       const username = typeof data === "object" && data.username ? data.username : null;
@@ -144,8 +129,6 @@ function initializeSocket(server, allowedOrigins) {
         room = await roomModel.getRoomById(roomId, false);
 
         if (room) {
-          console.log('Room trouvée, permissions par défaut:', room.defaultPermissions);
-
           if (room.creatorId === currentUser.userId) {
             const adminPermissions = {
               editPermissions: true,
@@ -155,25 +138,21 @@ function initializeSocket(server, allowedOrigins) {
               interactionVideo: true
             };
             anonymousUserStore.updateUserPermissions(currentUser.userId, adminPermissions);
-            debugLog(`✅ Admin ${currentUser.username} avec tous les droits`);
           } else {
             const savedPermissions = userPermissionsStore.getUserPermissions(roomId, currentUser.userId);
 
             if (savedPermissions) {
               anonymousUserStore.updateUserPermissions(currentUser.userId, savedPermissions);
-              debugLog(`Permissions restaurées pour ${currentUser.username}`);
             } else {
               let defaultPerms = room.defaultPermissions;
               if (typeof defaultPerms === 'string') {
                 defaultPerms = JSON.parse(defaultPerms);
               }
               anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPerms);
-              debugLog(`Permissions par défaut appliquées pour ${currentUser.username}`);
             }
           }
         }
       } catch (error) {
-        debugLog(`Erreur lors de la récupération des permissions: ${error}`);
         const defaultPermissions = {
           editPermissions: false,
           sendMessages: true,
@@ -187,9 +166,6 @@ function initializeSocket(server, allowedOrigins) {
       await roomModel.updateRoomActivity(roomId);
       await roomModel.incrementUserCount(roomId);
 
-      debugLog(`${currentUser?.username || 'Client'} a rejoint la room ${roomId}`);
-
-      // ✅ Envoyer avec isAdmin et permissionsSet
       socket.emit('room-joined', {
         roomId: roomId,
         timestamp: new Date(),
@@ -208,11 +184,9 @@ function initializeSocket(server, allowedOrigins) {
         timestamp: new Date()
       });
 
-      const usersInRoom = anonymousUserStore.getUsersInRoom(roomId);
-      socket.emit('update-users', usersInRoom);
+      sendThrottledUpdateUsers(roomId);
     });
 
-    // ✅ UN SEUL leave-room
     socket.on('leave-room', async (roomId) => {
       anonymousUserStore.updateActivity(socket.id);
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
@@ -225,8 +199,6 @@ function initializeSocket(server, allowedOrigins) {
       if (socket.currentRoomId === roomId) {
         socket.currentRoomId = null;
       }
-
-      debugLog(`${currentUser?.username || 'Client'} a quitté la room ${roomId}`);
 
       socket.emit('room-left', {
         roomId: roomId,
@@ -244,7 +216,7 @@ function initializeSocket(server, allowedOrigins) {
     });
 
     socket.on('error', (error) => {
-      debugLog('Erreur Socket.IO:', error);
+      console.error('Erreur Socket.IO:', error);
     });
   });
 

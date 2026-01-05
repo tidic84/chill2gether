@@ -12,6 +12,8 @@ import Playlist from "../components/Playlist/Playlist";
 import YouTubeSearch from "../components/searchbar/YouTubeSearch";
 import History from "../components/History/History";
 import GridMotion from "../components/GridMotion/GridMotion";
+import { useTutorial } from '../contexts/TutorialContext';
+
 
 export default function RoomPage() {
     const { roomId } = useParams();
@@ -33,6 +35,17 @@ export default function RoomPage() {
     const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
     const [history, setHistory] = useState([]);
     const [shouldAutoplay, setShouldAutoplay] = useState(true);
+
+    const {
+        startTutorial,
+        isActive,
+        currentStepData,
+        nextStep,
+        previousStep,
+        skipTutorial,
+        totalSteps,
+        currentStep
+    } = useTutorial();
 
     // Vérifier si la room existe au chargement
     useEffect(() => {
@@ -250,6 +263,18 @@ export default function RoomPage() {
         console.log('📤 Émission add-to-playlist vers le serveur');
     };
 
+    //tuto automatique
+    useEffect(() => {
+        if (roomState === 'authenticated' && !showUsernamePopup) {
+            // Délai de 1 seconde pour laisser le temps aux éléments de se charger
+            const timer = setTimeout(() => {
+                startTutorial('room');
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [roomState, showUsernamePopup, startTutorial]);
+
     // Gérer la fin de la vidéo
     const handleVideoEnded = () => {
         console.log('Video ended');
@@ -327,6 +352,41 @@ export default function RoomPage() {
             }}
         />
     );
+
+    <div className="fixed bottom-4 left-4 z-50 space-y-2">
+
+        {isActive && (
+            <>
+                <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs">
+                    <p className="text-sm font-bold">Step {currentStep + 1}/{totalSteps}</p>
+                    <p className="text-xs">{currentStepData?.title}</p>
+                    <p className="text-xs text-gray-600">{currentStepData?.content}</p>
+                    <p className="text-xs mt-2">Target: {currentStepData?.target}</p>
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={previousStep}
+                        className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
+                    >
+                        Prev
+                    </button>
+                    <button
+                        onClick={nextStep}
+                        className="px-3 py-1 bg-green-500 text-white rounded text-sm"
+                    >
+                        Next
+                    </button>
+                    <button
+                        onClick={skipTutorial}
+                        className="px-3 py-1 bg-red-500 text-white rounded text-sm"
+                    >
+                        Skip
+                    </button>
+                </div>
+            </>
+        )}
+    </div>
 
     // État de chargement
     if (roomState === 'loading') {
@@ -438,11 +498,18 @@ export default function RoomPage() {
                 <Header roomCode={roomId} />
                 <MainLayout
                     video={
-                        <VideoPlayer
-                            url={currentVideoUrl}
-                            onEnded={handleVideoEnded}
-                            autoplay={shouldAutoplay}
-                        />
+                        <div className="bg-white dark:bg-zen-dark-surface p-2 rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
+                            <div
+                                className="w-full aspect-video bg-black rounded-xl overflow-hidden"
+                                data-tutorial="video-player"
+                            >
+                                <VideoPlayer
+                                    url={currentVideoUrl}
+                                    onEnded={handleVideoEnded}
+                                    autoplay={shouldAutoplay}
+                                />
+                            </div>
+                        </div>
                     }
                     chat={<Chat />}
                     users={<UserList users={users} />}
