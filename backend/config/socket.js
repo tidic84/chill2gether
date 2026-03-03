@@ -4,7 +4,10 @@ const roomModel = require("../model/roomModel");
 const { debugLog } = require("../utils/utils");
 const { initializeChatHandlers } = require("../services/chatService");
 const { initializePlaylistHandlers } = require("./handlers/playlistHandlers");
+const { initializeWhiteboardHandlers } = require("./handlers/whiteboardHandlers");
 const playlistService = require("../services/playlistService");
+const whiteboardService = require("../services/whiteboardService");
+const roleService = require("../services/roleService");
 
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
@@ -92,6 +95,9 @@ function initializeSocket(server, allowedOrigins) {
     // Initialiser les gestionnaires de playlist pour ce socket
     initializePlaylistHandlers(io, socket);
 
+    // Initialiser les gestionnaires de whiteboard pour ce socket
+    initializeWhiteboardHandlers(io, socket);
+
     // Événement pour changer de nom d'utilisateur
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
@@ -136,6 +142,7 @@ function initializeSocket(server, allowedOrigins) {
         );
         if (usersInRoom.length === 0) {
           playlistService.deletePlaylist(socket.currentRoomId);
+          whiteboardService.deleteWhiteboard(socket.currentRoomId);
         }
       } else {
         // Supprimer l'utilisateur du store
@@ -163,7 +170,12 @@ function initializeSocket(server, allowedOrigins) {
         `${currentUser?.username || "Client"} a rejoint la room ${roomId}`,
       );
 
-      // Confirmer la jointure au client avec les infos utilisateur
+      // Résoudre le rôle de l'utilisateur dans la room
+      const userRole = currentUser
+        ? await roleService.getUserRole(roomId, currentUser.userId)
+        : 'student';
+
+      // Confirmer la jointure au client avec les infos utilisateur et le rôle
       socket.emit("room-joined", {
         roomId: roomId,
         timestamp: new Date(),
@@ -171,6 +183,7 @@ function initializeSocket(server, allowedOrigins) {
           userId: currentUser?.userId,
           username: currentUser?.username,
         },
+        role: userRole,
       });
 
       // Notifier les autres membres de la room

@@ -2,7 +2,7 @@ import { Coffee, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export default function Header({ roomCode }) {
+export default function Header({ roomCode, children }) {
     const [copied, setCopied] = useState(false);
 
     const handleCopyCode = () => {
@@ -25,6 +25,9 @@ export default function Header({ roomCode }) {
                         chill<span className="text-zen-muted font-medium">2gether</span>
                     </h1>
                 </Link>
+
+                {/* Children (e.g., mode switch) */}
+                {children}
 
                 {/* Room Code - Only show if roomCode exists */}
                 {roomCode && (

@@ -1,7 +1,7 @@
 import ChatSidebar from "@/components/ChatSidebar/ChatSidebar";
 import BottomMenu from "@/components/BottomMenu/BottomMenu";
 
-export default function MainLayout({ video, chat, users, playlist, search, history, activities, permissions }) {
+export default function MainLayout({ video, chat, users, playlist, search, history, activities, permissions, rawVideoSlot = false }) {
     return (
         <div className="min-h-screen bg-zen-cream text-zen-charcoal flex flex-col">
             {/* Main Content Area */}
@@ -17,12 +17,16 @@ export default function MainLayout({ video, chat, users, playlist, search, histo
                                 {search}
                             </div>
 
-                            {/* Video Player */}
-                            <div className="bg-white p-2 rounded-2xl shadow-sm border border-zen-warm-stone">
-                                <div className="w-full aspect-video bg-zen-near-black rounded-xl overflow-hidden">
-                                    {video}
+                            {/* Video Player / Whiteboard */}
+                            {rawVideoSlot ? (
+                                video
+                            ) : (
+                                <div className="bg-white p-2 rounded-2xl shadow-sm border border-zen-warm-stone">
+                                    <div className="w-full aspect-video bg-zen-near-black rounded-xl overflow-hidden">
+                                        {video}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Bottom Panel - Users, Activities, Permissions */}
