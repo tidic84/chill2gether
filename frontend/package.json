@@ -11,11 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@excalidraw/excalidraw": "^0.18.0",
-=======
     "emoji-picker-react": "^4.16.1",
->>>>>>> main
     "framer-motion": "^12.23.24",
     "gsap": "^3.14.1",
     "hls.js": "^1.6.15",

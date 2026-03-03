@@ -23,7 +23,7 @@ export default function MainLayout({ video, chat, users, playlist, search, histo
                                     video
                                 ) : (
                                     <div className="bg-white dark:bg-zen-dark-surface p-2 rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
-                                        <div className="w-full aspect-video bg-black rounded-xl overflow-hidden">
+                                        <div className="w-full aspect-video bg-black rounded-xl overflow-hidden" data-tutorial="video-player">
                                             {video}
                                         </div>
                                     </div>

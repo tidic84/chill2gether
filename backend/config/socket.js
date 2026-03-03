@@ -5,15 +5,10 @@ const roomModel = require("../model/roomModel");
 const { initializePlaylistHandlers } = require("./handlers/playlistHandlers");
 const { initializeWhiteboardHandlers } = require("./handlers/whiteboardHandlers");
 const playlistService = require("../services/playlistService");
-<<<<<<< HEAD
 const whiteboardService = require("../services/whiteboardService");
 const roleService = require("../services/roleService");
-=======
 const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
 const userPermissionsStore = require('../services/userPermissionsStore');
-
-
->>>>>>> main
 
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
@@ -77,14 +72,8 @@ function initializeSocket(server, allowedOrigins) {
     //initializeChatHandlers(io, socket);
     initializePlaylistHandlers(io, socket);
     initializePermissionsHandlers(io, socket);
-
-<<<<<<< HEAD
-    // Initialiser les gestionnaires de whiteboard pour ce socket
     initializeWhiteboardHandlers(io, socket);
 
-    // Événement pour changer de nom d'utilisateur
-=======
->>>>>>> main
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
       if (currentUser) {
@@ -180,34 +169,21 @@ function initializeSocket(server, allowedOrigins) {
       await roomModel.updateRoomActivity(roomId);
       await roomModel.incrementUserCount(roomId);
 
-<<<<<<< HEAD
-      debugLog(
-        `${currentUser?.username || "Client"} a rejoint la room ${roomId}`,
-      );
-
       // Résoudre le rôle de l'utilisateur dans la room
       const userRole = currentUser
         ? await roleService.getUserRole(roomId, currentUser.userId)
         : 'student';
 
-      // Confirmer la jointure au client avec les infos utilisateur et le rôle
-      socket.emit("room-joined", {
-=======
       socket.emit('room-joined', {
->>>>>>> main
         roomId: roomId,
         timestamp: new Date(),
         user: {
           userId: currentUser?.userId,
           username: currentUser?.username,
-<<<<<<< HEAD
-        },
-        role: userRole,
-=======
           permissionsSet: currentUser?.permissionsSet,
           isAdmin: room?.creatorId === currentUser?.userId
-        }
->>>>>>> main
+        },
+        role: userRole,
       });
 
       socket.to(roomId).emit('user-joined', {
