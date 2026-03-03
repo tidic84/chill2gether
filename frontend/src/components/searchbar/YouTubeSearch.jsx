@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
+import { usePermissions } from "../../contexts/SocketContext";
 
 // Fonction pour décoder les entités HTML
 const decodeHTMLEntities = (text) => {
@@ -46,8 +47,10 @@ export default function YouTubeSearch({ onSelectVideo }) {
   const [isSuggestionsAnimating, setIsSuggestionsAnimating] = useState(false);
   const containerRef = useRef(null);
   const isSearchingRef = useRef(false);
+  const permissions = usePermissions();
+  const canChangeVideo = permissions?.changeVideo !== false;
 
-  
+
 
 
   // Fonction optimisée pour récupérer les suggestions
@@ -135,7 +138,7 @@ export default function YouTubeSearch({ onSelectVideo }) {
 
   const handleSearch = async (searchQuery) => {
     // Si searchQuery est un événement ou undefined, utiliser query
-    const rawInput  = typeof searchQuery === 'string' ? searchQuery : query;
+    const rawInput = typeof searchQuery === 'string' ? searchQuery : query;
     const queryToSearch = normalizeYouTubeInput(rawInput);
 
     if (!queryToSearch.trim()) return;
@@ -177,16 +180,33 @@ export default function YouTubeSearch({ onSelectVideo }) {
     setResults([]);
   };
 
+  const handleVideoSelect = (video) => {
+    if (!canChangeVideo) {
+      return;
+    }
+    onSelectVideo(video);
+  };
+
   return (
     <div ref={containerRef} className="relative w-full">
+      {/* Message de permission */}
+      {!canChangeVideo && (
+        <div className="absolute top-0 left-0 right-0 z-50 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2 mb-2">
+          <i className="fa-solid fa-lock"></i>
+          Vous n'avez pas la permission de changer la vidéo
+        </div>
+      )}
+
       {/* Search Bar */}
-      <div className="relative w-full">
+      <div className={`relative group w-full ${!canChangeVideo ? 'opacity-50 pointer-events-none' : ''}`}>
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-zen-stone" />
+          <Search className="h-4 w-4 text-zen-stone dark:text-zen-dark-stone" />
         </div>
         <input
           type="text"
-          className="block w-full pl-11 pr-4 py-3 bg-white border border-zen-warm-stone rounded-xl text-sm text-zen-charcoal placeholder-zen-stone outline-none focus:border-zen-stone transition-all shadow-sm"
+
+          className={`block w-full pl-11 pr-4 py-3 bg-white dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-xl text-sm text-zen-text dark:text-zen-dark-text placeholder-zen-stone outline-none focus:border-zen-stone transition-all shadow-sm ${!canChangeVideo ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+            }`}
           placeholder="Coller un lien YouTube ou rechercher une vidéo..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -196,18 +216,18 @@ export default function YouTubeSearch({ onSelectVideo }) {
             }
           }}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          disabled={!canChangeVideo}
         />
       </div>
 
       {/* Suggestions en temps réel */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className={`absolute z-50 mt-2 left-0 w-full max-h-[50vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-lg rounded-xl transition-all duration-200 ease-out ${
-          isSuggestionsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-        }`}>
+        <div className={`absolute z-50 mt-2 left-0 w-full max-h-[50vh] overflow-y-auto bg-white dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border shadow-lg rounded-xl transition-all duration-200 ease-out ${isSuggestionsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+          }`}>
           {suggestions.map((suggestion, index) => (
             <div
               key={index}
-              className="px-4 py-2 cursor-pointer hover:bg-zen-light-cream text-zen-charcoal border-b border-zen-warm-stone last:border-b-0"
+              className="px-4 py-2 cursor-pointer hover:bg-zen-surface dark:hover:bg-zen-dark-surface dark:bg-zen-dark-surface text-zen-text dark:text-zen-dark-text border-b border-zen-border dark:border-zen-dark-border last:border-b-0"
               onClick={() => handleSuggestionClick(suggestion)}
             >
               {suggestion}
@@ -217,17 +237,16 @@ export default function YouTubeSearch({ onSelectVideo }) {
       )}
 
       {/* Results Dropdown */}
-      { visible && (
-        <div className={`absolute z-50 mt-1 w-full max-h-[72vh] overflow-y-auto bg-white border border-zen-warm-stone shadow-xl rounded-xl transition-all duration-200 ease-out ${
-          isResultsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-        }`}>
-          <div className="p-4 border-b border-zen-warm-stone flex justify-between items-center">
-            <h3 className="font-semibold text-zen-charcoal">
+      {visible && (
+        <div className={`absolute z-50 mt-1 w-full max-h-[72vh] overflow-y-auto bg-white dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border shadow-xl rounded-xl transition-all duration-200 ease-out ${isResultsAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+          }`}>
+          <div className="p-4 border-b border-zen-border dark:border-zen-dark-border flex justify-between items-center">
+            <h3 className="font-semibold text-zen-text dark:text-zen-dark-text">
               {results.length} résultat{results.length > 1 ? 's' : ''}
             </h3>
             <button
               onClick={() => setVisible(false)}
-              className="text-zen-stone hover:text-zen-terracotta font-medium transition-colors text-sm"
+              className="text-zen-stone dark:text-zen-dark-stone hover:text-zen-clay dark:hover:text-zen-dark-clay dark:text-zen-dark-clay font-medium transition-colors text-sm"
             >
               Fermer ✕
             </button>
@@ -238,12 +257,12 @@ export default function YouTubeSearch({ onSelectVideo }) {
               {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                 <div key={i} className="flex gap-3 items-center p-3 rounded-lg animate-pulse">
                   {/* Skeleton thumbnail */}
-                  <div className="w-32 h-20 bg-zen-warm-stone rounded-lg flex-shrink-0"></div>
+                  <div className="w-32 h-20 bg-zen-border rounded-lg flex-shrink-0"></div>
 
                   {/* Skeleton content */}
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-zen-warm-stone rounded w-3/4"></div>
-                    <div className="h-3 bg-zen-warm-stone rounded w-1/2"></div>
+                    <div className="h-4 bg-zen-border rounded w-3/4"></div>
+                    <div className="h-3 bg-zen-border rounded w-1/2"></div>
                   </div>
                 </div>
               ))}
@@ -251,16 +270,16 @@ export default function YouTubeSearch({ onSelectVideo }) {
           )}
 
           {!loading && results.length === 0 && (
-            <p className="text-zen-stone text-center py-8">
+            <p className="text-zen-stone dark:text-zen-dark-stone text-center py-8">
               Aucun résultat trouvé
             </p>
           )}
-          {!loading &&(
+          {!loading && (
             <div className="p-2 space-y-2">
               {results.map((item) => (
                 <div
                   key={item.id.videoId}
-                  className="flex gap-3 items-center cursor-pointer hover:bg-zen-light-cream p-3 rounded-lg transition-all"
+                  className="flex gap-3 items-center cursor-pointer hover:bg-zen-surface dark:hover:bg-zen-dark-surface dark:bg-zen-dark-surface p-3 rounded-lg transition-all"
                   onClick={() => handleSelect(item)}
                 >
                   <img
@@ -269,10 +288,10 @@ export default function YouTubeSearch({ onSelectVideo }) {
                     className="w-32 h-20 rounded-lg object-cover flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-zen-charcoal text-sm line-clamp-2">
+                    <p className="font-semibold text-zen-text dark:text-zen-dark-text text-sm line-clamp-2">
                       {decodeHTMLEntities(item.snippet.title)}
                     </p>
-                    <p className="text-xs text-zen-stone mt-1">
+                    <p className="text-xs text-zen-stone dark:text-zen-dark-stone mt-1">
                       {decodeHTMLEntities(item.snippet.channelTitle)}
                     </p>
                   </div>

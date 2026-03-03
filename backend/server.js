@@ -9,7 +9,7 @@ const errorHandler = require('./middleware/errorHandler');
 // Import des fichiers de routes pour gérer les différentes entités
 const searchRoutes = require('./routes/searchRoutes');
 const roomRoutes = require('./routes/roomRoutes');
-// const userRoutes = require('./routes/userRoutes');
+const userRoutes = require('./routes/userRoutes');
 // Import de la configuration Socket.IO
 const initializeSocket = require('./config/socket');
 // Import du service de nettoyage des rooms
@@ -44,6 +44,7 @@ app.use(express.json());
 // Définition des routes principales de l'API, avec préfixe /api
 app.use('/api/search', searchRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/users', userRoutes);
 
 // app.use('/api/users', userRoutes);
 

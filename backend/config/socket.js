@@ -1,13 +1,19 @@
 const { Server } = require("socket.io");
 const anonymousUserStore = require("../services/anonymousUserStore");
 const roomModel = require("../model/roomModel");
-const { debugLog } = require("../utils/utils");
-const { initializeChatHandlers } = require("../services/chatService");
+//const { initializeChatHandlers } = require("../services/chatService");
 const { initializePlaylistHandlers } = require("./handlers/playlistHandlers");
 const { initializeWhiteboardHandlers } = require("./handlers/whiteboardHandlers");
 const playlistService = require("../services/playlistService");
+<<<<<<< HEAD
 const whiteboardService = require("../services/whiteboardService");
 const roleService = require("../services/roleService");
+=======
+const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
+const userPermissionsStore = require('../services/userPermissionsStore');
+
+
+>>>>>>> main
 
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
@@ -18,95 +24,75 @@ const roleService = require("../services/roleService");
 function initializeSocket(server, allowedOrigins) {
   const io = new Server(server, {
     cors: {
-      origin: "*", // Permet toutes les origines, incluant file://
+      origin: "*",
       methods: ["GET", "POST"],
       credentials: true,
     },
-    // Réduire les timeouts pour détecter les déconnexions plus rapidement
-    pingTimeout: 5000, // Temps d'attente avant de considérer la connexion perdue
-    pingInterval: 10000, // Intervalle entre les pings
+    pingTimeout: 5000,
+    pingInterval: 10000,
   });
 
-  // Map pour stocker les timers de throttling par room
   const updateUsersThrottleMap = new Map();
 
-  // Fonction pour envoyer les updates throttlés (max 1 par seconde par room)
   const sendThrottledUpdateUsers = (roomId) => {
     if (updateUsersThrottleMap.has(roomId)) {
-      // Un update est déjà prévu, ne rien faire
       return;
     }
-
-    // Marquer qu'un update est en cours
     updateUsersThrottleMap.set(roomId, true);
-
-    // Envoyer l'update immédiatement
     const usersInRoom = anonymousUserStore.getUsersInRoom(roomId);
     io.to(roomId).emit("update-users", usersInRoom);
-
-    // Empêcher les nouveaux updates pendant 1 seconde
     setTimeout(() => {
       updateUsersThrottleMap.delete(roomId);
     }, 100);
   };
 
-  // Nettoyage périodique des utilisateurs déconnectés (toutes les 10 secondes)
   setInterval(() => {
-    anonymousUserStore.cleanupDisconnectedUsers(3600); // Supprime après 1 heure de déconnexion
+    anonymousUserStore.cleanupDisconnectedUsers(3600);
   }, 10000);
 
-  // Gestion des connexions
   io.on("connection", (socket) => {
-    debugLog(`Nouveau client connecté: ${socket.id}`);
-
-    // ### Partie Vérifier si l'utilisateur a déjà un userId (reconnexion)
     const existingUserId = socket.handshake.auth.userId;
-    debugLog("existingUserId", existingUserId);
+    const username = socket.handshake.auth.username || null;
     let user;
+
     if (existingUserId && anonymousUserStore.userExists(existingUserId)) {
-      // Utilisateur existant qui se reconnecte (même après une actualisation de page)
       anonymousUserStore.updateSocketId(existingUserId, socket.id);
       user = anonymousUserStore.getUserById(existingUserId);
-      debugLog(
-        `Utilisateur existant reconnecté: ${user.username} (${existingUserId})`,
-      );
+    } else if (existingUserId) {
+      user = anonymousUserStore.restoreOrCreateUser(socket.id, existingUserId, username);
     } else {
-      // Nouvel utilisateur
-      const username = socket.handshake.auth.username || null;
       user = anonymousUserStore.createUser(socket.id, username);
-      debugLog(`Nouvel utilisateur créé: ${user.username} (${user.userId})`);
     }
 
-    // Envoyer l'userId au client pour qu'il le stocke
     socket.emit("user-registered", {
       userId: user.userId,
       username: user.username,
       connectedAt: user.connectedAt,
     });
 
-    // Envoyer le nombre d'utilisateurs connectés
     io.emit("users-count", {
       count: anonymousUserStore.getUserCount(),
     });
 
-    // Initialiser les gestionnaires de chat pour ce socket
-    initializeChatHandlers(io, socket);
-
-    // Initialiser les gestionnaires de playlist pour ce socket
+    //initializeChatHandlers(io, socket);
     initializePlaylistHandlers(io, socket);
+    initializePermissionsHandlers(io, socket);
 
+<<<<<<< HEAD
     // Initialiser les gestionnaires de whiteboard pour ce socket
     initializeWhiteboardHandlers(io, socket);
 
     // Événement pour changer de nom d'utilisateur
+=======
+>>>>>>> main
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
       if (currentUser) {
         anonymousUserStore.updateUsername(currentUser.userId, newUsername);
         socket.emit("username-updated", { username: newUsername });
-        console.log(
-          `Utilisateur ${currentUser.userId} a changé de nom: ${newUsername}`,
-        );
+        if (socket.currentRoomId) {
+          sendThrottledUpdateUsers(socket.currentRoomId);
+        }
       }
     });
 
@@ -114,58 +100,87 @@ function initializeSocket(server, allowedOrigins) {
       sendThrottledUpdateUsers(roomId);
     });
 
-    // Événement de déconnexion
     socket.on("disconnect", async (reason) => {
-      debugLog(`Client déconnecté: ${socket.id} - Raison: ${reason}`);
-
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
 
-      // Si l'utilisateur était dans une room, décrémenter le compteur
       if (socket.currentRoomId) {
         await roomModel.decrementUserCount(socket.currentRoomId);
-        debugLog(`Compteur décrémenté pour la room ${socket.currentRoomId}`);
 
-        // Retirer l'utilisateur de la room en mémoire
         if (currentUser) {
           anonymousUserStore.setUserRoom(currentUser.userId, null);
         }
-
-        // Supprimer l'utilisateur du store avant d'envoyer la mise à jour
         anonymousUserStore.removeUserBySocketId(socket.id);
-
-        // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
         sendThrottledUpdateUsers(socket.currentRoomId);
 
-        // Si dernier utilisateur de la room, supprimer la playlist
-        const usersInRoom = anonymousUserStore.getUsersInRoom(
-          socket.currentRoomId,
-        );
+        const usersInRoom = anonymousUserStore.getUsersInRoom(socket.currentRoomId);
         if (usersInRoom.length === 0) {
           playlistService.deletePlaylist(socket.currentRoomId);
           whiteboardService.deleteWhiteboard(socket.currentRoomId);
         }
       } else {
-        // Supprimer l'utilisateur du store
         anonymousUserStore.removeUserBySocketId(socket.id);
       }
     });
 
-    // Rejoindre une room spécifique
-    socket.on("join-room", async (roomId) => {
+    socket.on("join-room", async (data) => {
+      const roomId = typeof data === "string" ? data : data.roomId;
+      const username = typeof data === "object" && data.username ? data.username : null;
+
       anonymousUserStore.updateActivity(socket.id);
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
 
+      if (username && currentUser) {
+        anonymousUserStore.updateUsername(currentUser.userId, username);
+        currentUser.username = username;
+      }
+
       socket.join(roomId);
-
-      // Stocker la room actuelle dans le socket pour la gérer lors de la déconnexion
       socket.currentRoomId = roomId;
-
       anonymousUserStore.setUserRoom(currentUser.userId, roomId);
 
-      // Mettre à jour l'activité et le compteur d'utilisateurs de la room
-      await roomModel.incrementUserCount(roomId);
-      await roomModel.updateRoomActivity(roomId);
+      let room;
+      try {
+        room = await roomModel.getRoomById(roomId, false);
 
+        if (room) {
+          if (room.creatorId === currentUser.userId) {
+            const adminPermissions = {
+              editPermissions: true,
+              sendMessages: true,
+              deleteMessages: true,
+              changeVideo: true,
+              interactionVideo: true
+            };
+            anonymousUserStore.updateUserPermissions(currentUser.userId, adminPermissions);
+          } else {
+            const savedPermissions = userPermissionsStore.getUserPermissions(roomId, currentUser.userId);
+
+            if (savedPermissions) {
+              anonymousUserStore.updateUserPermissions(currentUser.userId, savedPermissions);
+            } else {
+              let defaultPerms = room.defaultPermissions;
+              if (typeof defaultPerms === 'string') {
+                defaultPerms = JSON.parse(defaultPerms);
+              }
+              anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPerms);
+            }
+          }
+        }
+      } catch (error) {
+        const defaultPermissions = {
+          editPermissions: false,
+          sendMessages: true,
+          deleteMessages: false,
+          changeVideo: true,
+          interactionVideo: true
+        };
+        anonymousUserStore.updateUserPermissions(currentUser.userId, defaultPermissions);
+      }
+
+      await roomModel.updateRoomActivity(roomId);
+      await roomModel.incrementUserCount(roomId);
+
+<<<<<<< HEAD
       debugLog(
         `${currentUser?.username || "Client"} a rejoint la room ${roomId}`,
       );
@@ -177,70 +192,64 @@ function initializeSocket(server, allowedOrigins) {
 
       // Confirmer la jointure au client avec les infos utilisateur et le rôle
       socket.emit("room-joined", {
+=======
+      socket.emit('room-joined', {
+>>>>>>> main
         roomId: roomId,
         timestamp: new Date(),
         user: {
           userId: currentUser?.userId,
           username: currentUser?.username,
+<<<<<<< HEAD
         },
         role: userRole,
+=======
+          permissionsSet: currentUser?.permissionsSet,
+          isAdmin: room?.creatorId === currentUser?.userId
+        }
+>>>>>>> main
       });
 
-      // Notifier les autres membres de la room
-      socket.to(roomId).emit("user-joined", {
+      socket.to(roomId).emit('user-joined', {
         userId: currentUser?.userId,
         username: currentUser?.username,
         socketId: socket.id,
-        timestamp: new Date(),
+        timestamp: new Date()
       });
 
-      // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
       sendThrottledUpdateUsers(roomId);
     });
 
-    // Quitter une room
-    socket.on("leave-room", async (roomId) => {
+    socket.on('leave-room', async (roomId) => {
       anonymousUserStore.updateActivity(socket.id);
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
-
+      if (currentUser && roomId) {
+        userPermissionsStore.removeUserPermissions(roomId, currentUser.userId);
+      }
       socket.leave(roomId);
-
-      // Décrémenter le compteur d'utilisateurs de la room
       await roomModel.decrementUserCount(roomId);
 
-      // Retirer la room du socket et de l'utilisateur en mémoire
       if (socket.currentRoomId === roomId) {
         socket.currentRoomId = null;
       }
-      if (currentUser) {
-        anonymousUserStore.setUserRoom(currentUser.userId, null);
-      }
 
-      debugLog(
-        `${currentUser?.username || "Client"} a quitté la room ${roomId}`,
-      );
-
-      // Confirmer la sortie au client
-      socket.emit("room-left", {
+      socket.emit('room-left', {
         roomId: roomId,
-        timestamp: new Date(),
+        timestamp: new Date()
       });
 
-      // Notifier les autres membres de la room
-      socket.to(roomId).emit("user-left", {
+      socket.to(roomId).emit('user-left', {
         userId: currentUser?.userId,
         username: currentUser?.username,
         socketId: socket.id,
-        timestamp: new Date(),
+        timestamp: new Date()
       });
 
-      // Envoyer la liste mise à jour des utilisateurs à tous les clients de la room
       sendThrottledUpdateUsers(roomId);
     });
 
-    // Gestion des erreurs
-    socket.on("error", (error) => {
-      debugLog("Erreur Socket.IO:", error);
+    socket.on('error', (error) => {
+      console.error('Erreur Socket.IO:', error);
     });
   });
 
