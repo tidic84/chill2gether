@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.0",
     "emoji-picker-react": "^4.16.1",
     "framer-motion": "^12.23.24",
     "gsap": "^3.14.1",
