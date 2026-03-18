@@ -10,8 +10,6 @@ const roleService = require("../services/roleService");
 const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
 const userPermissionsStore = require('../services/userPermissionsStore');
 
-
-
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
  * @param {object} server - Instance du serveur HTTP

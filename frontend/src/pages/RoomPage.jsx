@@ -18,7 +18,6 @@ import ScreenShare from "../components/ScreenShare/ScreenShare";
 import ModeSwitch from "../components/ModeSwitch/ModeSwitch";
 import { useTutorial } from '../contexts/TutorialContext';
 
-
 export default function RoomPage() {
     const { roomId } = useParams();
     const socket = useSocket();
@@ -166,8 +165,7 @@ export default function RoomPage() {
         socket.on('update-users', handleUpdateUsers);
 
         return () => {
-            // FIX: passer la référence du handler pour éviter de désenregistrer tous les listeners
-            socket.off('update-users', handleUpdateUsers);
+            socket.off('update-users');
         };
     }, [socket, roomData]);
 
@@ -204,7 +202,7 @@ export default function RoomPage() {
 
             // Lancer automatiquement seulement si c'est la première vidéo (playlist était vide)
             if (previousLength === 0 && data.videos.length === 1 && shouldAutoplay) {
-                console.log('🎬 Première vidéo de la playlist, lecture automatique');
+                console.log('Première vidéo de la playlist, lecture automatique');
                 socket.emit('play-video', { roomId, videoIndex: 0 });
             }
 
@@ -239,15 +237,12 @@ export default function RoomPage() {
 
     // Gérer les erreurs de la playlist
     useEffect(() => {
-        // FIX: utiliser une référence nommée pour pouvoir désenregistrer précisément ce handler
-        const handlePlaylistError = (data) => {
+        socket.on('playlist-error', (data) => {
             console.error('Playlist error:', data.error);
             alert(data.error);
-        };
+        });
 
-        socket.on('playlist-error', handlePlaylistError);
-
-        return () => socket.off('playlist-error', handlePlaylistError);
+        return () => socket.off('playlist-error');
     }, [socket]);
 
     useEffect(() => {
@@ -305,7 +300,7 @@ export default function RoomPage() {
         socket.emit('wb:mode-switch', { roomId, mode });
     }, [socket, roomId]);
 
-    // Handlers screen share
+    // Handler screen share
     const handleScreenShareStart = useCallback(() => {
         socket.emit('wb:screen-share-start', roomId);
     }, [socket, roomId]);
@@ -319,19 +314,17 @@ export default function RoomPage() {
 
     // Gérer la sélection d'une vidéo depuis la recherche YouTube
     const handleSelectVideo = (video) => {
-        console.log('📹 Sélection vidéo:', video);
-        setShouldAutoplay(true); // Lancer automatiquement une nouvelle vidéo
+        console.log('Sélection vidéo:', video);
+        setShouldAutoplay(true);
         socket.emit('add-to-playlist', {
             roomId,
             video
         });
-        console.log('📤 Émission add-to-playlist vers le serveur');
     };
 
     //tuto automatique
     useEffect(() => {
         if (roomState === 'authenticated' && !showUsernamePopup) {
-            // Délai de 1 seconde pour laisser le temps aux éléments de se charger
             const timer = setTimeout(() => {
                 startTutorial('room');
             }, 1000);
@@ -383,7 +376,7 @@ export default function RoomPage() {
     // Play video via WebSocket uniquement
     const handlePlayVideo = (index) => {
         console.log("Play video request:", index);
-        setShouldAutoplay(true); // Lancer automatiquement quand l'utilisateur sélectionne
+        setShouldAutoplay(true);
         socket.emit('play-video', { roomId, videoIndex: index });
     };
 
@@ -409,7 +402,6 @@ export default function RoomPage() {
             videos={history}
             onSelectVideo={(url) => {
                 console.log("History select:", url);
-                // Trouver l'index de la vidéo dans la playlist
                 const index = playlist.findIndex(v => v.url === url);
                 if (index >= 0) {
                     handlePlayVideo(index);
@@ -684,4 +676,3 @@ export default function RoomPage() {
 
     return null;
 }
-

@@ -1,7 +1,6 @@
 import ChatSidebar from "@/components/ChatSidebar/ChatSidebar";
 import BottomMenu from "@/components/BottomMenu/BottomMenu";
 
-
 export default function MainLayout({ video, chat, users, playlist, search, history, activities, permissions, rawVideoSlot = false }) {
     return (
         <div className="w-full h-screen flex flex-col bg-zen-bg dark:bg-zen-dark-bg text-zen-text dark:text-zen-dark-text overflow-hidden">
