@@ -3,11 +3,12 @@ const anonymousUserStore = require("../services/anonymousUserStore");
 const roomModel = require("../model/roomModel");
 //const { initializeChatHandlers } = require("../services/chatService");
 const { initializePlaylistHandlers } = require("./handlers/playlistHandlers");
+const { initializeWhiteboardHandlers } = require("./handlers/whiteboardHandlers");
 const playlistService = require("../services/playlistService");
+const whiteboardService = require("../services/whiteboardService");
+const roleService = require("../services/roleService");
 const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
 const userPermissionsStore = require('../services/userPermissionsStore');
-
-
 
 /**
  * Initialise et configure Socket.IO avec le serveur HTTP
@@ -71,6 +72,31 @@ function initializeSocket(server, allowedOrigins) {
     //initializeChatHandlers(io, socket);
     initializePlaylistHandlers(io, socket);
     initializePermissionsHandlers(io, socket);
+    initializeWhiteboardHandlers(io, socket);
+
+    // ── Signaling WebRTC pour le partage d'écran ──────────────────────────────
+    // Relaie les messages de négociation entre l'admin et chaque étudiant.
+
+    socket.on('screenshare:start', ({ roomId }) => {
+      socket.to(roomId).emit('screenshare:started', { streamerId: socket.id });
+    });
+
+    socket.on('screenshare:stop', ({ roomId }) => {
+      socket.to(roomId).emit('screenshare:stopped');
+    });
+
+    socket.on('screenshare:offer', ({ roomId, targetSocketId, offer }) => {
+      io.to(targetSocketId).emit('screenshare:offer', { fromSocketId: socket.id, offer });
+    });
+
+    socket.on('screenshare:answer', ({ roomId, targetSocketId, answer }) => {
+      io.to(targetSocketId).emit('screenshare:answer', { fromSocketId: socket.id, answer });
+    });
+
+    socket.on('screenshare:ice-candidate', ({ roomId, targetSocketId, candidate }) => {
+      io.to(targetSocketId).emit('screenshare:ice-candidate', { fromSocketId: socket.id, candidate });
+    });
+    // ─────────────────────────────────────────────────────────────────────────
 
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
@@ -102,6 +128,7 @@ function initializeSocket(server, allowedOrigins) {
         const usersInRoom = anonymousUserStore.getUsersInRoom(socket.currentRoomId);
         if (usersInRoom.length === 0) {
           playlistService.deletePlaylist(socket.currentRoomId);
+          whiteboardService.deleteWhiteboard(socket.currentRoomId);
         }
       } else {
         anonymousUserStore.removeUserBySocketId(socket.id);
@@ -166,6 +193,11 @@ function initializeSocket(server, allowedOrigins) {
       await roomModel.updateRoomActivity(roomId);
       await roomModel.incrementUserCount(roomId);
 
+      // Résoudre le rôle de l'utilisateur dans la room
+      const userRole = currentUser
+        ? await roleService.getUserRole(roomId, currentUser.userId)
+        : 'student';
+
       socket.emit('room-joined', {
         roomId: roomId,
         timestamp: new Date(),
@@ -174,7 +206,8 @@ function initializeSocket(server, allowedOrigins) {
           username: currentUser?.username,
           permissionsSet: currentUser?.permissionsSet,
           isAdmin: room?.creatorId === currentUser?.userId
-        }
+        },
+        role: userRole,
       });
 
       socket.to(roomId).emit('user-joined', {
