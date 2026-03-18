@@ -17,6 +17,7 @@ import WhiteboardToolbar from "../components/Whiteboard/WhiteboardToolbar";
 import ScreenShare from "../components/ScreenShare/ScreenShare";
 import ModeSwitch from "../components/ModeSwitch/ModeSwitch";
 import { useTutorial } from '../contexts/TutorialContext';
+import Notes from "../components/Notes/Notes";
 
 export default function RoomPage() {
     const { roomId } = useParams();
@@ -380,7 +381,6 @@ export default function RoomPage() {
         socket.emit('play-video', { roomId, videoIndex: index });
     };
 
-    // Contenu fictif pour activities et permissions
     const activities = (
         <ul className="space-y-1">
             <li className="px-2 py-1 bg-gray-100 rounded">Regarder une vidéo</li>
@@ -579,6 +579,7 @@ export default function RoomPage() {
                     }
                     search={<YouTubeSearch onSelectVideo={handleSelectVideo} />}
                     history={historyComponent}
+                    notes={<Notes roomId={roomId} />}
                     activities={activities}
                     permissions={permissions}
                 />

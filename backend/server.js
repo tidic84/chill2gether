@@ -10,6 +10,7 @@ const errorHandler = require('./middleware/errorHandler');
 const searchRoutes = require('./routes/searchRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const userRoutes = require('./routes/userRoutes');
+const noteRoutes = require('./routes/noteRoutes');
 // Import de la configuration Socket.IO
 const initializeSocket = require('./config/socket');
 // Import du service de nettoyage des rooms
@@ -45,6 +46,7 @@ app.use(express.json());
 app.use('/api/search', searchRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notes', noteRoutes);
 
 // app.use('/api/users', userRoutes);
 

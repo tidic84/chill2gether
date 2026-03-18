@@ -1,5 +1,29 @@
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
+export const noteApi = {
+    async getNote(roomId, userId) {
+        const response = await fetch(`${API_URL}/api/notes/${roomId}?userId=${encodeURIComponent(userId)}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Erreur lors de la récupération de la note');
+        }
+        return response.json();
+    },
+
+    async saveNote(roomId, userId, username, content) {
+        const response = await fetch(`${API_URL}/api/notes/${roomId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, username, content })
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Erreur lors de la sauvegarde de la note');
+        }
+        return response.json();
+    }
+};
+
 export const roomApi = {
     async createRoom(creatorId, requiresPassword = false, password = null) {
         const response = await fetch(`${API_URL}/api/rooms/create`, {
