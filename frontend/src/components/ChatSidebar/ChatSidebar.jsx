@@ -21,6 +21,7 @@ export default function ChatSidebar({ chat, playlist, history }) {
             {/* Header with Toggle Buttons */}
             <div className="flex p-1 m-3 bg-zen-bg dark:bg-zen-dark-bg rounded-xl border border-zen-border dark:border-zen-dark-border">
                 <button
+                    data-tutorial="playlist-sidebar"  // ajouter ici
                     onClick={() => setActiveOverlay((prev) => (prev === "playlist" ? null : "playlist"))}
                     className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide rounded-lg transition-all ${
                         activeOverlay === "playlist"
@@ -61,10 +62,12 @@ export default function ChatSidebar({ chat, playlist, history }) {
                     </div>
                 </div>
 
-                {/* Chat (toujours visible, en dessous de l'overlay) */}
-                <div className={`absolute bottom-0 left-0 w-full transition-all duration-200 ease-in-out ${
-                    activeOverlay ? "h-[60%]" : "h-full"
-                }`}>
+
+                <div 
+                    className={`absolute bottom-0 left-0 w-full transition-all duration-200 ease-in-out ${
+                        activeOverlay ? "h-[60%]" : "h-full"
+                    }`}
+                >
                     {chat}
                 </div>
             </div>

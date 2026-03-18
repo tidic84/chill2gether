@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
-export default function Header({ roomCode }) {
+export default function Header({ roomCode, children }) {
     const [copied, setCopied] = useState(false);
     const { isAuthenticated, user } = useAuth();
 
@@ -17,9 +17,9 @@ export default function Header({ roomCode }) {
     };
 
     return (
-        <header className="relative top-0 z-50 bg-white/90 dark:bg-zen-dark-surface/90 backdrop-blur-md border-b border-zen-border dark:border-zen-dark-border px-6 py-4 shadow-sm">
+        <header className="sticky top-0 z-50 bg-white/90 dark:bg-zen-dark-surface/90 backdrop-blur-md border-b border-zen-border dark:border-zen-dark-border px-6 py-4 shadow-sm">
             <div className="max-w-[1600px] mx-auto flex justify-between items-center">
-                {/* Logo */}
+                {/* Logo */} 
                 <Link to="/" className="flex items-center gap-3 cursor-pointer group">
                     <div className="w-10 h-10 bg-zen-sage dark:bg-zen-dark-sage rounded-xl flex items-center justify-center text-white shadow-md shadow-zen-sage/20 group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-mug-hot text-lg"></i>
@@ -28,6 +28,9 @@ export default function Header({ roomCode }) {
                         chill<span className="text-zen-muted dark:text-zen-dark-muted font-medium">2gether</span>
                     </h1>
                 </Link>
+
+                {/* Children (e.g., mode switch) */}
+                {children}
 
                 {/* Room Code, Profile & Theme Toggle */}
                 <div className="flex items-center gap-4">

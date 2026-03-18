@@ -35,8 +35,8 @@ export default function History({ videos = [], onSelectVideo }) {
                             key={`${video.id}-${index}`}
                             onClick={() => handleSelect(index)}
                             className={`relative flex gap-3 items-center p-2 rounded-lg transition-all ${index === currentIndex
-                                ? "bg-zen-sage dark:bg-zen-dark-sage/20 shadow-sm"
-                                : "bg-zen-sage dark:bg-zen-dark-sage/10 hover:shadow-sm"
+                              ? "bg-zen-sage/20 dark:bg-zen-dark-sage/20 shadow-sm"
+                              : "bg-zen-sage/10 dark:bg-zen-dark-sage/10 hover:shadow-sm"
                                 } ${canChangeVideo ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
                         >
                             {/* Thumbnail */}

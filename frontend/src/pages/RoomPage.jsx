@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { roomApi } from "../services/api";
 import { useSocket } from "../contexts/SocketContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -12,6 +12,12 @@ import Playlist from "../components/Playlist/Playlist";
 import YouTubeSearch from "../components/searchbar/YouTubeSearch";
 import History from "../components/History/History";
 import GridMotion from "../components/GridMotion/GridMotion";
+import Whiteboard from "../components/Whiteboard/Whiteboard";
+import WhiteboardToolbar from "../components/Whiteboard/WhiteboardToolbar";
+import ScreenShare from "../components/ScreenShare/ScreenShare";
+import ModeSwitch from "../components/ModeSwitch/ModeSwitch";
+import { useTutorial } from '../contexts/TutorialContext';
+
 
 export default function RoomPage() {
     const { roomId } = useParams();
@@ -33,6 +39,24 @@ export default function RoomPage() {
     const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
     const [history, setHistory] = useState([]);
     const [shouldAutoplay, setShouldAutoplay] = useState(true);
+
+    // État du whiteboard / mode cours
+    const [roomMode, setRoomMode] = useState('video'); // 'video' | 'course'
+    const [userRole, setUserRole] = useState('student'); // 'admin' | 'student'
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [drawPermissions, setDrawPermissions] = useState([]);
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
+
+    const {
+        startTutorial,
+        isActive,
+        currentStepData,
+        nextStep,
+        previousStep,
+        skipTutorial,
+        totalSteps,
+        currentStep
+    } = useTutorial();
 
     // Vérifier si la room existe au chargement
     useEffect(() => {
@@ -75,6 +99,7 @@ export default function RoomPage() {
     useEffect(() => {
         const handleUserRegistered = (data) => {
             setCurrentUsername(data.username);
+            setCurrentUserId(data.userId);
 
             // Ne pas afficher la popup si l'utilisateur est connecté
             if (data.username.startsWith("User") && !isAuthenticated) {
@@ -89,16 +114,20 @@ export default function RoomPage() {
         };
     }, [socket, isAuthenticated]);
 
-    // Écouter l'événement room-joined pour vérifier le pseudo
+    // Écouter l'événement room-joined pour vérifier le pseudo et le rôle
     useEffect(() => {
         const handleRoomJoined = (data) => {
             if (data.user && data.user.username) {
                 setCurrentUsername(data.user.username);
+                setCurrentUserId(data.user.userId);
 
                 // Ne pas afficher la popup si l'utilisateur est connecté
                 if (data.user.username.startsWith("User") && !isAuthenticated) {
                     setShowUsernamePopup(true);
                 }
+            }
+            if (data.role) {
+                setUserRole(data.role);
             }
         };
 
@@ -239,6 +268,43 @@ export default function RoomPage() {
         return () => socket.off('history-updated', handleHistoryUpdated);
     }, [socket]);
 
+    // Écouter les événements whiteboard
+    useEffect(() => {
+        const handleModeChanged = (data) => setRoomMode(data.mode);
+        const handleRoleChanged = (data) => setDrawPermissions(data.drawPermissions || []);
+        const handleScreenShareStart = () => setIsScreenSharing(true);
+        const handleScreenShareStop = () => setIsScreenSharing(false);
+
+        socket.on('wb:mode-changed', handleModeChanged);
+        socket.on('wb:role-changed', handleRoleChanged);
+        socket.on('wb:screen-share-start', handleScreenShareStart);
+        socket.on('wb:screen-share-stop', handleScreenShareStop);
+
+        return () => {
+            socket.off('wb:mode-changed', handleModeChanged);
+            socket.off('wb:role-changed', handleRoleChanged);
+            socket.off('wb:screen-share-start', handleScreenShareStart);
+            socket.off('wb:screen-share-stop', handleScreenShareStop);
+        };
+    }, [socket]);
+
+    // Handler mode switch (admin uniquement)
+    const handleModeSwitch = useCallback((mode) => {
+        socket.emit('wb:mode-switch', { roomId, mode });
+    }, [socket, roomId]);
+
+    // Handlers screen share
+    const handleScreenShareStart = useCallback(() => {
+        socket.emit('wb:screen-share-start', roomId);
+    }, [socket, roomId]);
+
+    const handleScreenShareStop = useCallback(() => {
+        socket.emit('wb:screen-share-stop', roomId);
+    }, [socket, roomId]);
+
+    // Peut dessiner : admin ou permission explicite
+    const canDraw = userRole === 'admin' || drawPermissions.includes(currentUserId);
+
     // Gérer la sélection d'une vidéo depuis la recherche YouTube
     const handleSelectVideo = (video) => {
         console.log('📹 Sélection vidéo:', video);
@@ -249,6 +315,18 @@ export default function RoomPage() {
         });
         console.log('📤 Émission add-to-playlist vers le serveur');
     };
+
+    //tuto automatique
+    useEffect(() => {
+        if (roomState === 'authenticated' && !showUsernamePopup) {
+            // Délai de 1 seconde pour laisser le temps aux éléments de se charger
+            const timer = setTimeout(() => {
+                startTutorial('room');
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [roomState, showUsernamePopup, startTutorial]);
 
     // Gérer la fin de la vidéo
     const handleVideoEnded = () => {
@@ -327,6 +405,41 @@ export default function RoomPage() {
             }}
         />
     );
+
+    <div className="fixed bottom-4 left-4 z-50 space-y-2">
+
+        {isActive && (
+            <>
+                <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs">
+                    <p className="text-sm font-bold">Step {currentStep + 1}/{totalSteps}</p>
+                    <p className="text-xs">{currentStepData?.title}</p>
+                    <p className="text-xs text-gray-600">{currentStepData?.content}</p>
+                    <p className="text-xs mt-2">Target: {currentStepData?.target}</p>
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={previousStep}
+                        className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
+                    >
+                        Prev
+                    </button>
+                    <button
+                        onClick={nextStep}
+                        className="px-3 py-1 bg-green-500 text-white rounded text-sm"
+                    >
+                        Next
+                    </button>
+                    <button
+                        onClick={skipTutorial}
+                        className="px-3 py-1 bg-red-500 text-white rounded text-sm"
+                    >
+                        Skip
+                    </button>
+                </div>
+            </>
+        )}
+    </div>
 
     // État de chargement
     if (roomState === 'loading') {
@@ -433,17 +546,58 @@ export default function RoomPage() {
 
     // Room authentifiée
     if (roomState === 'authenticated') {
+        // Contenu principal selon le mode
+        const mainContent = roomMode === 'course' ? (
+            <div className="flex flex-col gap-4">
+                {/* Toolbar admin */}
+                {userRole === 'admin' && (
+                    <WhiteboardToolbar
+                        roomId={roomId}
+                        users={users.filter(u => u.userId !== currentUserId)}
+                        drawPermissions={drawPermissions}
+                        onScreenShare={isScreenSharing ? handleScreenShareStop : handleScreenShareStart}
+                        isScreenSharing={isScreenSharing}
+                    />
+                )}
+
+                {/* Screen share overlay */}
+                {isScreenSharing && (
+                    <ScreenShare
+                        isAdmin={userRole === 'admin'}
+                        isSharing={isScreenSharing}
+                        onStart={handleScreenShareStart}
+                        onStop={handleScreenShareStop}
+                    />
+                )}
+
+                {/* Whiteboard */}
+                <div className="bg-white dark:bg-zen-dark-surface rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
+                    <Whiteboard
+                        roomId={roomId}
+                        viewMode={!canDraw}
+                    />
+                </div>
+            </div>
+        ) : (
+            <VideoPlayer
+                url={currentVideoUrl}
+                onEnded={handleVideoEnded}
+                autoplay={shouldAutoplay}
+            />
+        );
+
         return (
             <>
-                <Header roomCode={roomId} />
+                <Header roomCode={roomId}>
+                    <ModeSwitch
+                        mode={roomMode}
+                        onSwitch={handleModeSwitch}
+                        disabled={userRole !== 'admin'}
+                    />
+                </Header>
                 <MainLayout
-                    video={
-                        <VideoPlayer
-                            url={currentVideoUrl}
-                            onEnded={handleVideoEnded}
-                            autoplay={shouldAutoplay}
-                        />
-                    }
+                    video={mainContent}
+                    rawVideoSlot={roomMode === 'course'}
                     chat={<Chat />}
                     users={<UserList users={users} />}
                     playlist={
