@@ -2,13 +2,12 @@ import ChatSidebar from "@/components/ChatSidebar/ChatSidebar";
 import BottomMenu from "@/components/BottomMenu/BottomMenu";
 
 
-export default function MainLayout({ video, chat, users, playlist, search, history, activities, permissions }) {
+export default function MainLayout({ video, chat, users, playlist, search, history, activities, permissions, rawVideoSlot = false }) {
     return (
         <div className="w-full h-screen flex flex-col bg-zen-bg dark:bg-zen-dark-bg text-zen-text dark:text-zen-dark-text overflow-hidden">
             {/* Main Content Area - Scrollable */}
             <main className="flex-1 overflow-y-auto overflow-x-hidden">
                 <div className="max-w-[1600px] w-full mx-auto p-6 pb-20">
-                    {/* Ajout de pb-20 pour padding-bottom */}
                     <div className="flex gap-6">
                         {/* LEFT/CENTER AREA */}
                         <div className="flex-1 flex flex-col gap-6">
@@ -20,17 +19,20 @@ export default function MainLayout({ video, chat, users, playlist, search, histo
                                     {search}
                                 </div>
 
-                                {/* Video Player */}
-                                <div className="bg-white dark:bg-zen-dark-surface p-2 rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
-                                    <div className="w-full aspect-video bg-black rounded-xl overflow-hidden">
-                                        {video}
+                                {/* Video Player / Whiteboard */}
+                                {rawVideoSlot ? (
+                                    video
+                                ) : (
+                                    <div className="bg-white dark:bg-zen-dark-surface p-2 rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
+                                        <div className="w-full aspect-video bg-black rounded-xl overflow-hidden" data-tutorial="video-player">
+                                            {video}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             {/* Bottom Panel - Users, Activities, Permissions */}
                             <div className="bg-white dark:bg-zen-dark-surface rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border overflow-hidden min-h-[300px] mb-6">
-                                {/* Ajout de mb-6 pour plus d'espace */}
                                 <BottomMenu users={users} activities={activities} permissions={permissions} />
                             </div>
                         </div>

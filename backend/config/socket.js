@@ -3,7 +3,10 @@ const anonymousUserStore = require("../services/anonymousUserStore");
 const roomModel = require("../model/roomModel");
 //const { initializeChatHandlers } = require("../services/chatService");
 const { initializePlaylistHandlers } = require("./handlers/playlistHandlers");
+const { initializeWhiteboardHandlers } = require("./handlers/whiteboardHandlers");
 const playlistService = require("../services/playlistService");
+const whiteboardService = require("../services/whiteboardService");
+const roleService = require("../services/roleService");
 const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
 const userPermissionsStore = require('../services/userPermissionsStore');
 
@@ -71,6 +74,7 @@ function initializeSocket(server, allowedOrigins) {
     //initializeChatHandlers(io, socket);
     initializePlaylistHandlers(io, socket);
     initializePermissionsHandlers(io, socket);
+    initializeWhiteboardHandlers(io, socket);
 
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
@@ -102,6 +106,7 @@ function initializeSocket(server, allowedOrigins) {
         const usersInRoom = anonymousUserStore.getUsersInRoom(socket.currentRoomId);
         if (usersInRoom.length === 0) {
           playlistService.deletePlaylist(socket.currentRoomId);
+          whiteboardService.deleteWhiteboard(socket.currentRoomId);
         }
       } else {
         anonymousUserStore.removeUserBySocketId(socket.id);
@@ -166,6 +171,11 @@ function initializeSocket(server, allowedOrigins) {
       await roomModel.updateRoomActivity(roomId);
       await roomModel.incrementUserCount(roomId);
 
+      // Résoudre le rôle de l'utilisateur dans la room
+      const userRole = currentUser
+        ? await roleService.getUserRole(roomId, currentUser.userId)
+        : 'student';
+
       socket.emit('room-joined', {
         roomId: roomId,
         timestamp: new Date(),
@@ -174,7 +184,8 @@ function initializeSocket(server, allowedOrigins) {
           username: currentUser?.username,
           permissionsSet: currentUser?.permissionsSet,
           isAdmin: room?.creatorId === currentUser?.userId
-        }
+        },
+        role: userRole,
       });
 
       socket.to(roomId).emit('user-joined', {

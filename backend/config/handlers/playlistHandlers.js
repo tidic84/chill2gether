@@ -134,8 +134,11 @@ function initializePlaylistHandlers(io, socket) {
      * Réorganise l'ordre des vidéos (drag & drop)
      */
     socket.on('reorder-playlist', (data) => {
+        // FIX: extraire roomId avant le try pour qu'il soit accessible dans le catch
+        const roomId = data?.roomId;
         try {
-            const { roomId, fromIndex, toIndex } = data;
+            const { fromIndex, toIndex } = data;
+            const user = anonymousUserStore.getUserBySocketId(socket.id);
 
             if (roomId === undefined || fromIndex === undefined || toIndex === undefined) {
                 socket.emit('playlist-error', { error: 'roomId, fromIndex et toIndex requis' });
@@ -147,10 +150,17 @@ function initializePlaylistHandlers(io, socket) {
                 return;
             }
 
+            // FIX: vérifier la permission changeVideo (manquait)
+            if (!user?.permissionsSet?.changeVideo) {
+                socket.emit('playlist-error', { error: 'Permission refusée: vous n\'avez pas le droit de changer la vidéo' });
+                return;
+            }
+
             playlistService.reorderPlaylist(roomId, fromIndex, toIndex);
 
             playlistService.broadcastPlaylistUpdate(io, roomId);
         } catch (error) {
+            // FIX: roomId maintenant accessible car déclaré avant le try
             debugLog(`Erreur lors du réordonnancement de la playlist pour la room ${roomId}: ${error}`);
             socket.emit('playlist-error', { error: 'An error occurred while reordering the playlist.' });
         }
@@ -198,8 +208,9 @@ function initializePlaylistHandlers(io, socket) {
      * Émet 'video-changed' et 'history-updated' si vidéo suivante, 'playlist-updated' si fin de playlist
      */
     socket.on('video-ended', (data) => {
+        // FIX: extraire roomId avant le try pour qu'il soit accessible dans le catch
+        const roomId = data?.roomId;
         try {
-            const roomId = data.roomId;
 
             if (roomId === undefined) {
                 socket.emit('playlist-error', { error: 'Room ID is required when a video ends.' });

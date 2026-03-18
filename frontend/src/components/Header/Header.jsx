@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
-export default function Header({ roomCode }) {
+export default function Header({ roomCode, children }) {
     const [copied, setCopied] = useState(false);
     const { isAuthenticated, user } = useAuth();
 
@@ -28,6 +28,9 @@ export default function Header({ roomCode }) {
                         chill<span className="text-zen-muted dark:text-zen-dark-muted font-medium">2gether</span>
                     </h1>
                 </Link>
+
+                {/* Children (e.g., mode switch) */}
+                {children}
 
                 {/* Room Code, Profile & Theme Toggle */}
                 <div className="flex items-center gap-4">
