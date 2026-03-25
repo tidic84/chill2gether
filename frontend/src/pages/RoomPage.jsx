@@ -187,7 +187,7 @@ export default function RoomPage() {
         socket.on('update-users', handleUpdateUsers);
 
         return () => {
-            socket.off('update-users');
+            socket.off('update-users', handleUpdateUsers);
         };
     }, [socket, roomData]);
 
