@@ -74,6 +74,30 @@ function initializeSocket(server, allowedOrigins) {
     initializePermissionsHandlers(io, socket);
     initializeWhiteboardHandlers(io, socket);
 
+    // ── Signaling WebRTC pour le partage d'écran ──────────────────────────────
+    // Relaie les messages de négociation entre l'admin et chaque étudiant.
+
+    socket.on('screenshare:start', ({ roomId }) => {
+      socket.to(roomId).emit('screenshare:started', { streamerId: socket.id });
+    });
+
+    socket.on('screenshare:stop', ({ roomId }) => {
+      socket.to(roomId).emit('screenshare:stopped');
+    });
+
+    socket.on('screenshare:offer', ({ roomId, targetSocketId, offer }) => {
+      io.to(targetSocketId).emit('screenshare:offer', { fromSocketId: socket.id, offer });
+    });
+
+    socket.on('screenshare:answer', ({ roomId, targetSocketId, answer }) => {
+      io.to(targetSocketId).emit('screenshare:answer', { fromSocketId: socket.id, answer });
+    });
+
+    socket.on('screenshare:ice-candidate', ({ roomId, targetSocketId, candidate }) => {
+      io.to(targetSocketId).emit('screenshare:ice-candidate', { fromSocketId: socket.id, candidate });
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
     socket.on("change-username", (newUsername, roomId) => {
       const currentUser = anonymousUserStore.getUserBySocketId(socket.id);
       if (currentUser) {
