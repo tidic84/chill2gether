@@ -17,6 +17,7 @@ import Whiteboard from "../components/Whiteboard/Whiteboard";
 import WhiteboardToolbar from "../components/Whiteboard/WhiteboardToolbar";
 import ScreenShare from "../components/ScreenShare/ScreenShare";
 import ModeSwitch from "../components/ModeSwitch/ModeSwitch";
+import VideoAnnotationPlayer from "../components/VideoAnnotation/VideoAnnotationPlayer";
 import { useTutorial } from '../contexts/TutorialContext';
 
 
@@ -42,7 +43,7 @@ export default function RoomPage() {
     const [shouldAutoplay, setShouldAutoplay] = useState(true);
 
     // État du whiteboard / mode cours
-    const [roomMode, setRoomMode] = useState('video'); // 'video' | 'course'
+    const [roomMode, setRoomMode] = useState('video'); // 'video' | 'annotation' | 'course'
     const [userRole, setUserRole] = useState('student'); // 'admin' | 'student'
     // L'ID anonyme socket (UUID localStorage) — c'est lui stocké en DB comme owner_id
     const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem('anonymousUserId'));
@@ -533,43 +534,60 @@ export default function RoomPage() {
     // Room authentifiée
     if (roomState === 'authenticated') {
         // Contenu principal selon le mode
-        const mainContent = roomMode === 'course' ? (
-            <div className="flex flex-col gap-4">
-                {/* Toolbar admin */}
-                {userRole === 'admin' && (
-                    <WhiteboardToolbar
-                        roomId={roomId}
-                        users={users.filter(u => u.userId !== currentUserId)}
-                        drawPermissions={drawPermissions}
-                        onScreenShare={handleScreenShareToggle}
-                        isScreenSharing={isScreenSharing}
-                    />
-                )}
+        let mainContent;
+        if (roomMode === 'course') {
+            mainContent = (
+                <div className="flex flex-col gap-4">
+                    {/* Toolbar admin */}
+                    {userRole === 'admin' && (
+                        <WhiteboardToolbar
+                            roomId={roomId}
+                            users={users.filter(u => u.userId !== currentUserId)}
+                            drawPermissions={drawPermissions}
+                            onScreenShare={handleScreenShareToggle}
+                            isScreenSharing={isScreenSharing}
+                        />
+                    )}
 
-                {/* Partage d'écran — affiche le flux local (admin) ou distant (étudiant) */}
-                <ScreenShare
-                    isAdmin={isAdmin}
-                    isSharing={isScreenSharing}
-                    localStream={localStream}
-                    remoteStream={remoteStream}
-                    error={shareError}
-                />
-
-                {/* Whiteboard */}
-                <div className="bg-white dark:bg-zen-dark-surface rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
-                    <Whiteboard
-                        roomId={roomId}
-                        viewMode={!canDraw}
+                    {/* Partage d'écran — affiche le flux local (admin) ou distant (étudiant) */}
+                    <ScreenShare
+                        isAdmin={isAdmin}
+                        isSharing={isScreenSharing}
+                        localStream={localStream}
+                        remoteStream={remoteStream}
+                        error={shareError}
                     />
+
+                    {/* Whiteboard */}
+                    <div className="bg-white dark:bg-zen-dark-surface rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
+                        <Whiteboard
+                            roomId={roomId}
+                            viewMode={!canDraw}
+                        />
+                    </div>
                 </div>
-            </div>
-        ) : (
-            <VideoPlayer
-                url={currentVideoUrl}
-                onEnded={handleVideoEnded}
-                autoplay={shouldAutoplay}
-            />
-        );
+            );
+        } else if (roomMode === 'annotation') {
+            mainContent = (
+                <VideoAnnotationPlayer
+                    url={currentVideoUrl}
+                    onEnded={handleVideoEnded}
+                    autoplay={shouldAutoplay}
+                    roomId={roomId}
+                    userRole={userRole}
+                    currentUserId={currentUserId}
+                    users={users}
+                />
+            );
+        } else {
+            mainContent = (
+                <VideoPlayer
+                    url={currentVideoUrl}
+                    onEnded={handleVideoEnded}
+                    autoplay={shouldAutoplay}
+                />
+            );
+        }
 
         return (
             <>
@@ -582,7 +600,7 @@ export default function RoomPage() {
                 </Header>
                 <MainLayout
                     video={mainContent}
-                    rawVideoSlot={roomMode === 'course'}
+                    rawVideoSlot={roomMode === 'course' || roomMode === 'annotation'}
                     chat={<Chat />}
                     users={<UserList users={users} />}
                     playlist={

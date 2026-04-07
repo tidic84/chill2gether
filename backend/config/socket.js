@@ -4,8 +4,10 @@ const roomModel = require("../model/roomModel");
 //const { initializeChatHandlers } = require("../services/chatService");
 const { initializePlaylistHandlers } = require("./handlers/playlistHandlers");
 const { initializeWhiteboardHandlers } = require("./handlers/whiteboardHandlers");
+const { initializeAnnotationHandlers } = require("./handlers/annotationHandlers");
 const playlistService = require("../services/playlistService");
 const whiteboardService = require("../services/whiteboardService");
+const annotationService = require("../services/annotationService");
 const roleService = require("../services/roleService");
 const { initializePermissionsHandlers } = require('./handlers/permissionsHandlers');
 const userPermissionsStore = require('../services/userPermissionsStore');
@@ -73,6 +75,7 @@ function initializeSocket(server, allowedOrigins) {
     initializePlaylistHandlers(io, socket);
     initializePermissionsHandlers(io, socket);
     initializeWhiteboardHandlers(io, socket);
+    initializeAnnotationHandlers(io, socket);
 
     // ── Signaling WebRTC pour le partage d'écran ──────────────────────────────
     // Relaie les messages de négociation entre l'admin et chaque étudiant.
@@ -129,6 +132,7 @@ function initializeSocket(server, allowedOrigins) {
         if (usersInRoom.length === 0) {
           playlistService.deletePlaylist(socket.currentRoomId);
           whiteboardService.deleteWhiteboard(socket.currentRoomId);
+          annotationService.deleteAnnotation(socket.currentRoomId);
         }
       } else {
         anonymousUserStore.removeUserBySocketId(socket.id);
