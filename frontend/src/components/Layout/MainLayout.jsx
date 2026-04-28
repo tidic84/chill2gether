@@ -1,7 +1,7 @@
 import ChatSidebar from "@/components/ChatSidebar/ChatSidebar";
 import BottomMenu from "@/components/BottomMenu/BottomMenu";
 
-export default function MainLayout({ video, chat, users, playlist, search, history, activities, permissions, rawVideoSlot = false }) {
+export default function MainLayout({ video, chat, users, playlist, search, history, notes, activities, permissions, rawVideoSlot = false }) {
     return (
         <div className="w-full h-screen flex flex-col bg-zen-bg dark:bg-zen-dark-bg text-zen-text dark:text-zen-dark-text overflow-hidden">
             {/* Main Content Area - Scrollable */}
@@ -39,7 +39,7 @@ export default function MainLayout({ video, chat, users, playlist, search, histo
                         {/* RIGHT PANEL - Chat & Playlist (STICKY) */}
                         <div className="hidden lg:block w-[350px] xl:w-[400px]">
                             <div className="sticky top-[0.5rem] w-[350px] xl:w-[400px] h-[calc(100vh-6.5rem)] bg-white dark:bg-zen-dark-surface border border-zen-border dark:border-zen-dark-border rounded-2xl shadow-sm overflow-hidden">
-                                <ChatSidebar chat={chat} playlist={playlist} history={history} />
+                                <ChatSidebar chat={chat} playlist={playlist} history={history} notes={notes} />
                             </div>
                         </div>
                     </div>
