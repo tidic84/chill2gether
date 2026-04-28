@@ -3,7 +3,8 @@ const noteController = require('../controllers/noteController');
 
 const router = express.Router();
 
-router.get('/:roomId', noteController.getNote);
-router.put('/:roomId', noteController.saveNote);
+router.get('/hashtags', noteController.getAllHashtags);
+router.get('/:hashtag', noteController.getNote);
+router.put('/', noteController.saveNote);
 
 module.exports = router;

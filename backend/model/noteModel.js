@@ -1,26 +1,35 @@
 const { query } = require('../config/db');
 
-async function getNote(roomId, userId) {
+async function getNoteByHashtag(userId, hashtag) {
     const result = await query(
-        `SELECT * FROM user_notes WHERE room_id = $1 AND user_id = $2`,
-        [roomId, userId]
+        `SELECT * FROM user_notes WHERE user_id = $1 AND hashtag = $2`,
+        [userId, hashtag]
     );
     return result.rows[0] || null;
 }
 
-async function saveNote(roomId, userId, username, content, hashtags) {
+async function saveNote(userId, username, hashtag, content) {
     const result = await query(
-        `INSERT INTO user_notes (room_id, user_id, username, content, hashtags, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-         ON CONFLICT (room_id, user_id)
-         DO UPDATE SET content = $4, hashtags = $5, username = $3, updated_at = NOW()
+        `INSERT INTO user_notes (user_id, username, hashtag, content, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())
+         ON CONFLICT (user_id, hashtag)
+         DO UPDATE SET content = $4, username = $2, updated_at = NOW()
          RETURNING *`,
-        [roomId, userId, username, JSON.stringify(content), hashtags]
+        [userId, username, hashtag, JSON.stringify(content)]
     );
     return result.rows[0];
 }
 
+async function getAllHashtags(userId) {
+    const result = await query(
+        `SELECT hashtag, updated_at FROM user_notes WHERE user_id = $1 ORDER BY updated_at DESC`,
+        [userId]
+    );
+    return result.rows;
+}
+
 module.exports = {
-    getNote,
-    saveNote
+    getNoteByHashtag,
+    saveNote,
+    getAllHashtags
 };

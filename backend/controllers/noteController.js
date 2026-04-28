@@ -1,7 +1,8 @@
 const noteModel = require('../model/noteModel');
 
-function extractHashtags(text) {
-    return [...new Set((text.match(/#\w+/g) || []).map(h => h.toLowerCase()))];
+function extractFirstHashtag(text) {
+    const match = text.match(/#\w+/);
+    return match ? match[0].toLowerCase() : '#untitled';
 }
 
 function flatSerialize(nodes) {
@@ -20,18 +21,18 @@ function flatSerialize(nodes) {
 
 const getNote = async (req, res) => {
     try {
-        const { roomId } = req.params;
+        const { hashtag } = req.params;
         const { userId } = req.query;
 
-        if (!userId) {
-            return res.status(400).json({ success: false, error: 'userId est requis' });
+        if (!userId || !hashtag) {
+            return res.status(400).json({ success: false, error: 'userId et hashtag sont requis' });
         }
 
-        const note = await noteModel.getNote(roomId, userId);
+        const note = await noteModel.getNoteByHashtag(userId, hashtag);
 
         res.status(200).json({
             success: true,
-            note: note ? { content: note.content, hashtags: note.hashtags, updated_at: note.updated_at } : null
+            note: note ? { content: note.content, hashtag: note.hashtag, updated_at: note.updated_at } : null
         });
     } catch (error) {
         console.error('Erreur lors de la récupération de la note:', error);
@@ -41,21 +42,17 @@ const getNote = async (req, res) => {
 
 const saveNote = async (req, res) => {
     try {
-        const { roomId } = req.params;
-        const { userId, username, content } = req.body;
+        const { userId, username, hashtag, content } = req.body;
 
-        if (!userId || !content) {
-            return res.status(400).json({ success: false, error: 'userId et content sont requis' });
+        if (!userId || !content || !hashtag) {
+            return res.status(400).json({ success: false, error: 'userId, hashtag et content sont requis' });
         }
 
-        const plainText = flatSerialize(content);
-        const hashtags = extractHashtags(plainText);
-
-        const note = await noteModel.saveNote(roomId, userId, username, content, hashtags);
+        const note = await noteModel.saveNote(userId, username, hashtag, content);
 
         res.status(200).json({
             success: true,
-            note: { content: note.content, hashtags: note.hashtags, updated_at: note.updated_at }
+            note: { content: note.content, hashtag: note.hashtag, updated_at: note.updated_at }
         });
     } catch (error) {
         console.error('Erreur lors de la sauvegarde de la note:', error);
@@ -63,7 +60,28 @@ const saveNote = async (req, res) => {
     }
 };
 
+const getAllHashtags = async (req, res) => {
+    try {
+        const { userId } = req.query;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, error: 'userId est requis' });
+        }
+
+        const hashtags = await noteModel.getAllHashtags(userId);
+
+        res.status(200).json({
+            success: true,
+            hashtags: hashtags
+        });
+    } catch (error) {
+        console.error('Erreur lors de la récupération des hashtags:', error);
+        res.status(500).json({ success: false, error: 'Erreur lors de la récupération des hashtags' });
+    }
+};
+
 module.exports = {
     getNote,
-    saveNote
+    saveNote,
+    getAllHashtags
 };

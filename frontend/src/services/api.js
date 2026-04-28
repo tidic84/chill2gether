@@ -1,8 +1,8 @@
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 export const noteApi = {
-    async getNote(roomId, userId) {
-        const response = await fetch(`${API_URL}/api/notes/${roomId}?userId=${encodeURIComponent(userId)}`);
+    async getNote(hashtag, userId) {
+        const response = await fetch(`${API_URL}/api/notes/${encodeURIComponent(hashtag)}?userId=${encodeURIComponent(userId)}`);
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Erreur lors de la récupération de la note');
@@ -10,15 +10,24 @@ export const noteApi = {
         return response.json();
     },
 
-    async saveNote(roomId, userId, username, content) {
-        const response = await fetch(`${API_URL}/api/notes/${roomId}`, {
+    async saveNote(userId, username, hashtag, content) {
+        const response = await fetch(`${API_URL}/api/notes`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, username, content })
+            body: JSON.stringify({ userId, username, hashtag, content })
         });
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Erreur lors de la sauvegarde de la note');
+        }
+        return response.json();
+    },
+
+    async getAllHashtags(userId) {
+        const response = await fetch(`${API_URL}/api/notes/hashtags?userId=${encodeURIComponent(userId)}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Erreur lors de la récupération des hashtags');
         }
         return response.json();
     }
