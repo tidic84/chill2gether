@@ -139,7 +139,7 @@ function initializeWhiteboardHandlers(io, socket) {
     socket.on('wb:mode-switch', async (data) => {
         try {
             const { roomId, mode } = data;
-            if (!roomId || !['video', 'course'].includes(mode)) return;
+            if (!roomId || !['video', 'course', 'annotation'].includes(mode)) return;
 
             const user = anonymousUserStore.getUserBySocketId(socket.id);
             if (!user) return;
