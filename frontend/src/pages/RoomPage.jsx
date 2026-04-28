@@ -12,6 +12,7 @@ import UserList from "../components/UserList/UserList";
 import Playlist from "../components/Playlist/Playlist";
 import YouTubeSearch from "../components/searchbar/YouTubeSearch";
 import History from "../components/History/History";
+import Notes from "../components/Notes/Notes";
 import GridMotion from "../components/GridMotion/GridMotion";
 import Whiteboard from "../components/Whiteboard/Whiteboard";
 import WhiteboardToolbar from "../components/Whiteboard/WhiteboardToolbar";
@@ -613,6 +614,7 @@ export default function RoomPage() {
                     }
                     search={<YouTubeSearch onSelectVideo={handleSelectVideo} />}
                     history={historyComponent}
+                    notes={<Notes roomId={roomId} />}
                     activities={activities}
                     permissions={permissions}
                 />
