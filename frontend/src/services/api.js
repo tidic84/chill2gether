@@ -30,6 +30,17 @@ export const noteApi = {
             throw new Error(error.error || 'Erreur lors de la récupération des hashtags');
         }
         return response.json();
+    },
+
+    async deleteNote(hashtag, userId) {
+        const response = await fetch(`${API_URL}/api/notes/${encodeURIComponent(hashtag)}?userId=${encodeURIComponent(userId)}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Erreur lors de la suppression de la note');
+        }
+        return response.json();
     }
 };
 

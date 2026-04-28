@@ -80,8 +80,34 @@ const getAllHashtags = async (req, res) => {
     }
 };
 
+const deleteNote = async (req, res) => {
+    try {
+        const { hashtag } = req.params;
+        const { userId } = req.query;
+
+        if (!userId || !hashtag) {
+            return res.status(400).json({ success: false, error: 'userId et hashtag sont requis' });
+        }
+
+        const deletedNote = await noteModel.deleteNote(userId, hashtag);
+
+        if (!deletedNote) {
+            return res.status(404).json({ success: false, error: 'Note non trouvée' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Note supprimée avec succès'
+        });
+    } catch (error) {
+        console.error('Erreur lors de la suppression de la note:', error);
+        res.status(500).json({ success: false, error: 'Erreur lors de la suppression de la note' });
+    }
+};
+
 module.exports = {
     getNote,
     saveNote,
-    getAllHashtags
+    getAllHashtags,
+    deleteNote
 };

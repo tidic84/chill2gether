@@ -28,8 +28,17 @@ async function getAllHashtags(userId) {
     return result.rows;
 }
 
+async function deleteNote(userId, hashtag) {
+    const result = await query(
+        `DELETE FROM user_notes WHERE user_id = $1 AND hashtag = $2 RETURNING *`,
+        [userId, hashtag]
+    );
+    return result.rows[0] || null;
+}
+
 module.exports = {
     getNoteByHashtag,
     saveNote,
-    getAllHashtags
+    getAllHashtags,
+    deleteNote
 };

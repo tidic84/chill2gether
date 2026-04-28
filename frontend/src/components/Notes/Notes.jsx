@@ -5,13 +5,13 @@ import { FixedToolbar } from '@/components/ui/fixed-toolbar';
 import { MarkToolbarButton } from '@/components/ui/mark-toolbar-button';
 import { Editor, EditorContainer } from '@/components/ui/editor';
 import { BoldPlugin, ItalicPlugin, UnderlinePlugin, StrikethroughPlugin } from '@platejs/basic-nodes/react';
-import { Bold, Italic, Underline, Strikethrough, Save, Check, BookOpen } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, Save, Check, BookOpen, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { noteApi } from '../../services/api';
 
 const AUTOSAVE_DELAY = 2000;
 
-const defaultValue = [{ type: 'p', children: [{ text: '' }] }];
+const defaultValue = [{ type: 'p', children: [{ text: '#untitled' }] }];
 
 function getUserId(isAuthenticated, user) {
     if (isAuthenticated && user?.id) return String(user.id);
@@ -114,19 +114,39 @@ export default function Notes({ roomId }) {
 
         setSaveStatus('saving');
         try {
+            let updatedHashtags = hashtags;
+
+            // Si le hashtag change, supprimer l'ancienne note
+            const hashtagChanged = noteHashtag !== currentHashtag;
+            if (hashtagChanged && currentHashtag !== '#untitled') {
+                await noteApi.deleteNote(currentHashtag, userId);
+                // Mettre à jour la liste des hashtags en supprimant l'ancien
+                updatedHashtags = hashtags.filter(h => h.hashtag !== currentHashtag);
+                setHashtags(updatedHashtags);
+            }
+
+            // Sauvegarder la nouvelle note
             await noteApi.saveNote(userId, username, noteHashtag, content);
             lastSavedRef.current = serialized;
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 1500);
 
-            if (noteHashtag !== currentHashtag) {
+            // Mettre à jour le hashtag actuel si changement
+            if (hashtagChanged) {
                 setCurrentHashtag(noteHashtag);
             }
 
             // Mettre à jour la liste des hashtags si c'est une nouvelle note
-            const exists = hashtags.some(h => h.hashtag === noteHashtag);
+            const exists = updatedHashtags.some(h => h.hashtag === noteHashtag);
             if (!exists) {
-                setHashtags([{ hashtag: noteHashtag, updated_at: new Date().toISOString() }, ...hashtags]);
+                setHashtags([{ hashtag: noteHashtag, updated_at: new Date().toISOString() }, ...updatedHashtags]);
+            } else {
+                // Mettre à jour la date de la note existante
+                setHashtags(updatedHashtags.map(h => 
+                    h.hashtag === noteHashtag 
+                        ? { ...h, updated_at: new Date().toISOString() }
+                        : h
+                ));
             }
         } catch (err) {
             console.error('Erreur sauvegarde note:', err);
@@ -157,12 +177,29 @@ export default function Notes({ roomId }) {
 
     // Créer une nouvelle note
     const handleNewNote = () => {
-        const plainText = flatSerialize(editor.children);
-        const newHashtag = extractFirstHashtag(plainText) || '#untitled';
-        setCurrentHashtag(newHashtag);
+        setCurrentHashtag('#untitled');
         editor.tf.setValue(defaultValue);
         lastSavedRef.current = JSON.stringify(defaultValue);
         setShowIndexModal(false);
+    };
+
+    // Supprimer une note
+    const handleDeleteNote = async (hashtag, e) => {
+        e.stopPropagation();
+        if (!confirm(`Supprimer la note ${hashtag} ?`)) return;
+
+        try {
+            await noteApi.deleteNote(hashtag, userId);
+            setHashtags(hashtags.filter(h => h.hashtag !== hashtag));
+            
+            if (currentHashtag === hashtag) {
+                setCurrentHashtag('#untitled');
+                editor.tf.setValue(defaultValue);
+                lastSavedRef.current = JSON.stringify(defaultValue);
+            }
+        } catch (err) {
+            console.error('Erreur suppression note:', err);
+        }
     };
 
     // Cleanup timer
@@ -262,25 +299,36 @@ export default function Notes({ roomId }) {
                         {hashtags.length > 0 ? (
                             <div className="space-y-1">
                                 {hashtags.map((item) => (
-                                    <button
+                                    <div
                                         key={item.hashtag}
-                                        onClick={() => handleLoadNote(item.hashtag)}
-                                        className={`w-full text-left p-1.5 rounded text-xs transition ${
-                                            currentHashtag === item.hashtag
-                                                ? 'bg-zen-border dark:bg-zen-dark-border text-zen-text dark:text-zen-dark-text'
-                                                : 'hover:bg-zen-border dark:hover:bg-zen-dark-border text-zen-muted dark:text-zen-dark-muted'
-                                        }`}
+                                        className="flex items-center gap-1"
                                     >
-                                        <div className="font-medium">{item.hashtag}</div>
-                                        <div className="text-[9px] opacity-70">
-                                            {new Date(item.updated_at).toLocaleDateString('fr-FR', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </div>
-                                    </button>
+                                        <button
+                                            onClick={() => handleLoadNote(item.hashtag)}
+                                            className={`flex-1 text-left p-1.5 rounded text-xs transition ${
+                                                currentHashtag === item.hashtag
+                                                    ? 'bg-zen-border dark:bg-zen-dark-border text-zen-text dark:text-zen-dark-text'
+                                                    : 'hover:bg-zen-border dark:hover:bg-zen-dark-border text-zen-muted dark:text-zen-dark-muted'
+                                            }`}
+                                        >
+                                            <div className="font-medium">{item.hashtag}</div>
+                                            <div className="text-[9px] opacity-70">
+                                                {new Date(item.updated_at).toLocaleDateString('fr-FR', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </div>
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeleteNote(item.hashtag, e)}
+                                            className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900 transition text-red-500 dark:text-red-400"
+                                            title="Supprimer cette note"
+                                        >
+                                            <Trash2 className="size-3.5" />
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         ) : (
