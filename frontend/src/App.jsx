@@ -11,12 +11,10 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TutorialProvider } from './contexts/TutorialContext';
 import TutorialOverlay from './components/Tutorial/TutorialOverlay';
-import { TooltipProvider } from './components/ui/tooltip';
 
 function App() {
   return (
     <ThemeProvider>
-      <TooltipProvider>
       <TutorialProvider>
         <AuthProvider>
           <SocketProvider>
@@ -46,7 +44,6 @@ function App() {
           </SocketProvider>
         </AuthProvider>
       </TutorialProvider>
-      </TooltipProvider>
     </ThemeProvider>
   );
 }

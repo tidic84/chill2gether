@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { roomApi } from "../services/api";
+import { useScreenShare } from "../hooks/useScreenShare";
 import { useSocket } from "../contexts/SocketContext";
 import { useAuth } from "../contexts/AuthContext";
 import MainLayout from "../components/Layout/MainLayout";
@@ -17,7 +18,7 @@ import WhiteboardToolbar from "../components/Whiteboard/WhiteboardToolbar";
 import ScreenShare from "../components/ScreenShare/ScreenShare";
 import ModeSwitch from "../components/ModeSwitch/ModeSwitch";
 import { useTutorial } from '../contexts/TutorialContext';
-import Notes from "../components/Notes/Notes";
+
 
 export default function RoomPage() {
     const { roomId } = useParams();
@@ -43,9 +44,33 @@ export default function RoomPage() {
     // État du whiteboard / mode cours
     const [roomMode, setRoomMode] = useState('video'); // 'video' | 'course'
     const [userRole, setUserRole] = useState('student'); // 'admin' | 'student'
-    const [currentUserId, setCurrentUserId] = useState(null);
+    // L'ID anonyme socket (UUID localStorage) — c'est lui stocké en DB comme owner_id
+    const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem('anonymousUserId'));
     const [drawPermissions, setDrawPermissions] = useState([]);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
+
+    // Hook WebRTC — monté ici pour que les listeners soient toujours actifs
+    const isAdmin = userRole === 'admin';
+    const {
+        localStream,
+        remoteStream,
+        error: shareError,
+        startSharing,
+        stopSharing,
+        handleNewViewer,
+    } = useScreenShare({ isAdmin, roomId });
+
+    // Envoyer des offres aux nouveaux arrivants si un partage est en cours
+    const prevUsersRef = useRef([]);
+    useEffect(() => {
+        if (!isAdmin) return;
+        const prev = prevUsersRef.current;
+        const prevIds = new Set(prev.map((u) => u.socketId).filter(Boolean));
+        users.forEach((u) => {
+            if (u.socketId && !prevIds.has(u.socketId)) handleNewViewer(u.socketId);
+        });
+        prevUsersRef.current = users;
+    }, [users, isAdmin, handleNewViewer]);
 
     const {
         startTutorial,
@@ -85,7 +110,6 @@ export default function RoomPage() {
 
     // Rejoindre la room via Socket.IO
     const joinSocketRoom = () => {
-        // Si l'utilisateur est connecté, on envoie son username
         if (isAuthenticated && user?.username) {
             socket.emit('join-room', { roomId, username: user.username });
         } else {
@@ -99,9 +123,8 @@ export default function RoomPage() {
     useEffect(() => {
         const handleUserRegistered = (data) => {
             setCurrentUsername(data.username);
-            setCurrentUserId(data.userId);
+            if (data.userId) setCurrentUserId(data.userId);
 
-            // Ne pas afficher la popup si l'utilisateur est connecté
             if (data.username.startsWith("User") && !isAuthenticated) {
                 setShowUsernamePopup(true);
             }
@@ -119,9 +142,8 @@ export default function RoomPage() {
         const handleRoomJoined = (data) => {
             if (data.user && data.user.username) {
                 setCurrentUsername(data.user.username);
-                setCurrentUserId(data.user.userId);
+                if (data.user.userId) setCurrentUserId(data.user.userId);
 
-                // Ne pas afficher la popup si l'utilisateur est connecté
                 if (data.user.username.startsWith("User") && !isAuthenticated) {
                     setShowUsernamePopup(true);
                 }
@@ -155,10 +177,9 @@ export default function RoomPage() {
     // Écouter les mises à jour de la liste des utilisateurs
     useEffect(() => {
         const handleUpdateUsers = (data) => {
-            const currentUserId = localStorage.getItem('anonymousUserId');
-            const enrichedUsers = data.map(user => ({
-                ...user,
-                isAdmin: user.userId === roomData?.creatorId
+            const enrichedUsers = data.map(u => ({
+                ...u,
+                isAdmin: u.userId === roomData?.creatorId
             }));
             setUsers(enrichedUsers);
         };
@@ -166,7 +187,7 @@ export default function RoomPage() {
         socket.on('update-users', handleUpdateUsers);
 
         return () => {
-            socket.off('update-users');
+            socket.off('update-users', handleUpdateUsers);
         };
     }, [socket, roomData]);
 
@@ -178,7 +199,6 @@ export default function RoomPage() {
             setPlaylist(data.videos);
             setCurrentVideoIndex(data.currentIndex);
 
-            // Toujours afficher la vidéo courante même si elle n'est pas en lecture
             if (data.videos.length > 0 && data.currentIndex >= 0) {
                 const currentVideo = data.videos[data.currentIndex];
                 setCurrentVideoUrl(currentVideo.url);
@@ -201,13 +221,11 @@ export default function RoomPage() {
             setPlaylist(data.videos);
             setCurrentVideoIndex(data.currentIndex);
 
-            // Lancer automatiquement seulement si c'est la première vidéo (playlist était vide)
             if (previousLength === 0 && data.videos.length === 1 && shouldAutoplay) {
                 console.log('Première vidéo de la playlist, lecture automatique');
                 socket.emit('play-video', { roomId, videoIndex: 0 });
             }
 
-            // Toujours afficher la vidéo courante même si elle n'est pas en lecture
             if (data.videos.length > 0 && data.currentIndex >= 0) {
                 const currentVideo = data.videos[data.currentIndex];
                 setCurrentVideoUrl(currentVideo.url);
@@ -221,7 +239,7 @@ export default function RoomPage() {
         return () => socket.off('playlist-updated', handlePlaylistUpdated);
     }, [socket, playlist.length, shouldAutoplay, roomId]);
 
-    // Écouter les changements de vidéo (play-video et video-ended)
+    // Écouter les changements de vidéo
     useEffect(() => {
         const handleVideoChanged = (data) => {
             console.log("Video changed:", data);
@@ -301,14 +319,15 @@ export default function RoomPage() {
         socket.emit('wb:mode-switch', { roomId, mode });
     }, [socket, roomId]);
 
-    // Handler screen share
-    const handleScreenShareStart = useCallback(() => {
-        socket.emit('wb:screen-share-start', roomId);
-    }, [socket, roomId]);
-
-    const handleScreenShareStop = useCallback(() => {
-        socket.emit('wb:screen-share-stop', roomId);
-    }, [socket, roomId]);
+    // Handlers screen share
+    // startSharing fait d'abord getDisplayMedia, puis appelle le callback si succès
+    const handleScreenShareToggle = useCallback(async () => {
+        if (isScreenSharing) {
+            stopSharing(() => socket.emit('wb:screen-share-stop', roomId));
+        } else {
+            await startSharing(users, () => socket.emit('wb:screen-share-start', roomId));
+        }
+    }, [isScreenSharing, startSharing, stopSharing, socket, roomId, users]);
 
     // Déterminer si l'utilisateur peut dessiner
     const canDraw = userRole === 'admin' || drawPermissions.includes(currentUserId);
@@ -317,10 +336,7 @@ export default function RoomPage() {
     const handleSelectVideo = (video) => {
         console.log('Sélection vidéo:', video);
         setShouldAutoplay(true);
-        socket.emit('add-to-playlist', {
-            roomId,
-            video
-        });
+        socket.emit('add-to-playlist', { roomId, video });
     };
 
     //tuto automatique
@@ -381,6 +397,7 @@ export default function RoomPage() {
         socket.emit('play-video', { roomId, videoIndex: index });
     };
 
+    // Contenu fictif pour activities et permissions
     const activities = (
         <ul className="space-y-1">
             <li className="px-2 py-1 bg-gray-100 rounded">Regarder une vidéo</li>
@@ -524,20 +541,19 @@ export default function RoomPage() {
                         roomId={roomId}
                         users={users.filter(u => u.userId !== currentUserId)}
                         drawPermissions={drawPermissions}
-                        onScreenShare={isScreenSharing ? handleScreenShareStop : handleScreenShareStart}
+                        onScreenShare={handleScreenShareToggle}
                         isScreenSharing={isScreenSharing}
                     />
                 )}
 
-                {/* Screen share overlay */}
-                {isScreenSharing && (
-                    <ScreenShare
-                        isAdmin={userRole === 'admin'}
-                        isSharing={isScreenSharing}
-                        onStart={handleScreenShareStart}
-                        onStop={handleScreenShareStop}
-                    />
-                )}
+                {/* Partage d'écran — affiche le flux local (admin) ou distant (étudiant) */}
+                <ScreenShare
+                    isAdmin={isAdmin}
+                    isSharing={isScreenSharing}
+                    localStream={localStream}
+                    remoteStream={remoteStream}
+                    error={shareError}
+                />
 
                 {/* Whiteboard */}
                 <div className="bg-white dark:bg-zen-dark-surface rounded-2xl shadow-sm border border-zen-border dark:border-zen-dark-border">
@@ -579,7 +595,6 @@ export default function RoomPage() {
                     }
                     search={<YouTubeSearch onSelectVideo={handleSelectVideo} />}
                     history={historyComponent}
-                    notes={<Notes roomId={roomId} />}
                     activities={activities}
                     permissions={permissions}
                 />
